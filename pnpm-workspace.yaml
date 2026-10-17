@@ -4,13 +4,17 @@ packages:
 catalogMode: prefer
 
 catalog:
+  "@ai-sdk/react": ^4.0.146
   "@changesets/cli": ^3.0.3
   "@dicebear/collection": ^9.4.2
   "@dicebear/core": ^9.4.3
+  "@shadcn/react": ^0.3.1
   "@types/node": ^24
   "@workos-inc/authkit-react": ^0.16.3
+  ai: ^7.0.142
   barcode-detector: ^3.2.2
   react-error-boundary: ^6.1.6
+  streamdown: ^2.7.0
   typescript: ^7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@1.2.0
   vite-plus: 1.2.0

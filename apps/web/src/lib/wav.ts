@@ -27,20 +27,12 @@ export function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([view], { type: "audio/wav" });
 }
 
-/** Decodes whatever MediaRecorder produced and resamples it to 16 kHz mono. */
-export async function toSpeechWav(recording: Blob): Promise<Blob> {
-  const context = new AudioContext();
-  const decoded = await context.decodeAudioData(await recording.arrayBuffer());
-  await context.close();
-  const offline = new OfflineAudioContext(
-    1,
-    Math.ceil(decoded.duration * SPEECH_SAMPLE_RATE),
-    SPEECH_SAMPLE_RATE,
-  );
-  const source = offline.createBufferSource();
-  source.buffer = decoded;
-  source.connect(offline.destination);
-  source.start();
-  const rendered = await offline.startRendering();
-  return encodeWav(rendered.getChannelData(0), SPEECH_SAMPLE_RATE);
+export function joinSamples(chunks: Float32Array[]): Float32Array {
+  const joined = new Float32Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return joined;
 }

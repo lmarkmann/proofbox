@@ -30,7 +30,6 @@ export type Evidence = {
   end_s: number | null;
   text: string;
 };
-export type Answer = { answer: string; evidence: Evidence[] };
 /** What Cosmos saw in a sealed pack's clip, computed once at seal. */
 export type CosmosSummary = {
   pack_id: string;
@@ -105,8 +104,11 @@ export const getSummary = (packId: string, signal?: AbortSignal) =>
 
 export const packVideoUrl = (packId: string) => `/api/packs/${encodeURIComponent(packId)}/video`;
 
-export const ask = (question: string, orderId: string | null, signal?: AbortSignal) =>
-  call<Answer>("/ask", { ...json({ question, order_id: orderId }), signal });
+export type SealCheck = { pack_id: string; verdict: Verdict; text: string };
+
+/** 404 until the agent has compared the sealed clip with the order */
+export const getCheck = (packId: string, signal?: AbortSignal) =>
+  call<SealCheck>(`/packs/${encodeURIComponent(packId)}/check`, { signal });
 
 export function transcribe(wav: Blob) {
   const form = new FormData();

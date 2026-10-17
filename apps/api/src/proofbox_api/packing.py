@@ -37,6 +37,12 @@ class PackSummary(BaseModel):
     counts: dict[str, int]
 
 
+class Check(BaseModel):
+    pack_id: str
+    verdict: Verdict
+    text: str
+
+
 class Pack(PackSummary):
     order_id: str
     started_at: datetime

@@ -198,13 +198,17 @@ def install(
             timeout=settings.timeout_seconds, transport=transport
         ) as client:
             app.state.client = client
-            try:
-                await database_call(store.initialize)
-                app.state.db_ready = True
-            except HTTPException:
-                LOG.warning(
-                    "VAST initialization unavailable; readiness remains false"
-                )
+            # The custom adapter is optional alongside the main VSS workflow.
+            # Do not connect to its database at startup unless configured.
+            # /ready and data routes still verify lazily when requested.
+            if settings.upstream_url != "https://ngrok-free.dev":
+                try:
+                    await database_call(store.initialize)
+                    app.state.db_ready = True
+                except HTTPException:
+                    LOG.warning(
+                        "VAST initialization unavailable; readiness remains false"
+                    )
             async with existing_lifespan(app):
                 yield
 

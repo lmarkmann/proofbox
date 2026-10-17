@@ -1,21 +1,59 @@
-import { WifiOffIcon } from "lucide-react";
+import { SparklesIcon, WifiOffIcon } from "lucide-react";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 import { ActivityLog, usePackHistory } from "@/components/activity-log";
 import { AppHeader } from "@/components/app-header";
 import { CameraPanel } from "@/components/camera-panel";
 import { LabelPanel, type PrintedLabel } from "@/components/label-panel";
-import { Omnibox } from "@/components/omnibox";
+import { Inspector } from "@/components/inspector/inspector";
 import { PackHud, PackPanel } from "@/components/pack-panel";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
 import { VisionOverlay } from "@/components/vision-overlay";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import { useCamera } from "@/hooks/use-camera";
 import { useOnline } from "@/hooks/use-online";
 import { usePackSession } from "@/hooks/use-pack-session";
 import { type ApiHealth, type PrinterHealth, toPrinterStatus, useProbe } from "@/hooks/use-probe";
 import { useQr } from "@/hooks/use-qr";
+import { useSealCheck } from "@/hooks/use-seal-check";
 import { useVision } from "@/hooks/use-vision";
+import type { BenchPhase } from "@/lib/inspector";
+import type { PackState } from "@/hooks/use-pack-session";
+
+function benchPhase(state: PackState): BenchPhase {
+  switch (state.tag) {
+    case "packing":
+    case "sealing":
+    case "seal-failed":
+      return { tag: "packing", orderId: state.order.order_id };
+    case "sealed":
+      return {
+        tag: "sealed",
+        orderId: state.order.order_id,
+        items: state.order.items,
+        short: state.result.verdict !== "complete",
+      };
+    default:
+      return { tag: "idle" };
+  }
+}
+
+function AskButton({ onClick, flagged }: { onClick: () => void; flagged: boolean }) {
+  return (
+    <Button variant="outline" size="sm" onClick={onClick} className="relative gap-2">
+      <SparklesIcon />
+      Ask
+      <Kbd className="hidden sm:inline-flex">{"⌘"}K</Kbd>
+      {flagged && (
+        <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-amber-500 ring-2 ring-background">
+          <span className="sr-only">The after-seal check needs a look</span>
+        </span>
+      )}
+    </Button>
+  );
+}
 
 export function OfflineBanner() {
   return (
@@ -83,6 +121,9 @@ export function PackingStation() {
   const boundOrderId = "order" in session.state ? session.state.order.order_id : null;
   const seenOrderId = qr.sighting?.orderId ?? null;
   const foreignLabel = packing && seenOrderId && seenOrderId !== boundOrderId ? seenOrderId : null;
+  const [inspecting, setInspecting] = useState(false);
+  const check = useSealCheck(session.state.tag === "sealed" ? session.state.result.pack_id : null);
+  const flagged = check.tag === "ready" && check.check.verdict !== "complete";
 
   useEffect(() => {
     if (!packing) return;
@@ -96,82 +137,98 @@ export function PackingStation() {
   }, [packing, session]);
 
   return (
-    <div className="min-h-svh bg-muted/40">
-      <AppHeader />
-      {!online && <OfflineBanner />}
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Packing station</h1>
-          <p className="text-sm text-muted-foreground">
-            Film the pack, print the label, ship every box with proof.
-          </p>
-        </div>
-        <StatusStrip
-          api={api}
-          printer={printer}
-          camera={camera.state}
-          labelCount={labels.length}
-          lastLabelAt={labels[0]?.at ?? null}
+    <div className="group/station min-h-svh bg-muted/40">
+      <AppHeader>
+        <AskButton
+          onClick={() => setInspecting((open) => !open)}
+          flagged={flagged && !inspecting}
         />
-        <Omnibox orderId={boundOrderId} />
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
-          <div className="min-w-0">
-            <PanelBoundary title="Bench camera">
-              <CameraPanel
-                camera={camera.state}
-                video={video}
-                onStart={camera.start}
-                onStop={camera.stop}
-                onPlayFile={camera.playFile}
-                switchLocked={switchLocked}
-              >
-                <VisionOverlay
-                  detections={vision.tag === "live" && packing ? vision.detections : []}
-                  qr={qr.sighting}
-                  qrMatches={!boundOrderId || seenOrderId === boundOrderId}
-                  frameSize={frameSize}
-                />
-                <PackHud
+      </AppHeader>
+      {!online && <OfflineBanner />}
+      <div className="flex items-start">
+        <main className="mx-auto flex max-w-7xl min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Packing station</h1>
+            <p className="text-sm text-muted-foreground">
+              Film the pack, print the label, ship every box with proof.
+            </p>
+          </div>
+          <StatusStrip
+            api={api}
+            printer={printer}
+            camera={camera.state}
+            labelCount={labels.length}
+            lastLabelAt={labels[0]?.at ?? null}
+          />
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
+            <div className="min-w-0">
+              <PanelBoundary title="Bench camera">
+                <CameraPanel
+                  camera={camera.state}
+                  video={video}
+                  onStart={camera.start}
+                  onStop={camera.stop}
+                  onPlayFile={camera.playFile}
+                  switchLocked={switchLocked}
+                >
+                  <VisionOverlay
+                    detections={vision.tag === "live" && packing ? vision.detections : []}
+                    qr={qr.sighting}
+                    qrMatches={!boundOrderId || seenOrderId === boundOrderId}
+                    frameSize={frameSize}
+                  />
+                  <PackHud
+                    state={session.state}
+                    vision={packing ? vision : { tag: "off" }}
+                    recordingSince={session.recordingSince}
+                    foreignLabel={foreignLabel}
+                  />
+                </CameraPanel>
+              </PanelBoundary>
+            </div>
+            <div className="min-w-0">
+              <PanelBoundary title="Current box">
+                <PackPanel
                   state={session.state}
-                  vision={packing ? vision : { tag: "off" }}
-                  recordingSince={session.recordingSince}
-                  foreignLabel={foreignLabel}
+                  spans={session.spans}
+                  tracksByLabel={session.tracksByLabel}
+                  onSeal={() => void session.seal()}
+                  onRetrySeal={session.retrySeal}
+                  onRetryLookup={session.retryLookup}
+                  onReset={session.reset}
                 />
-              </CameraPanel>
-            </PanelBoundary>
+              </PanelBoundary>
+            </div>
+            <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-stretch">
+              <PanelBoundary title="Box label">
+                <LabelPanel
+                  printer={printer}
+                  onPrinted={(label) => setLabels((all) => [label, ...all])}
+                />
+              </PanelBoundary>
+            </div>
+            <div className="min-w-0">
+              <PanelBoundary title="Activity">
+                <ActivityLog
+                  labels={labels}
+                  history={history}
+                  onStart={() => document.getElementById("order-id")?.focus()}
+                />
+              </PanelBoundary>
+            </div>
           </div>
-          <div className="min-w-0">
-            <PanelBoundary title="Current box">
-              <PackPanel
-                state={session.state}
-                spans={session.spans}
-                tracksByLabel={session.tracksByLabel}
-                onSeal={() => void session.seal()}
-                onRetrySeal={session.retrySeal}
-                onRetryLookup={session.retryLookup}
-                onReset={session.reset}
-              />
-            </PanelBoundary>
-          </div>
-          <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-stretch">
-            <PanelBoundary title="Box label">
-              <LabelPanel
-                printer={printer}
-                onPrinted={(label) => setLabels((all) => [label, ...all])}
-              />
-            </PanelBoundary>
-          </div>
-          <div className="min-w-0">
-            <PanelBoundary title="Activity">
-              <ActivityLog
-                labels={labels}
-                history={history}
-                onStart={() => document.getElementById("order-id")?.focus()}
-              />
-            </PanelBoundary>
-          </div>
-        </div>
-      </main>
+        </main>
+        <PanelBoundary title="Inspector">
+          <Inspector
+            open={inspecting}
+            onOpenChange={setInspecting}
+            orderId={boundOrderId}
+            phase={benchPhase(session.state)}
+            check={check}
+            onRepack={session.repack}
+          />
+        </PanelBoundary>
+      </div>
     </div>
   );
 }

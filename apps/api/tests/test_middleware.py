@@ -68,6 +68,16 @@ def test_install_preserves_existing_application_lifespan():
     assert events == ["started", "closed"]
 
 
+def test_unconfigured_adapter_does_not_contact_vast_at_startup():
+    store = MagicMock()
+    app = FastAPI()
+    install(app, Settings(upstream_url="https://ngrok-free.dev"), store)
+    with TestClient(app) as client:
+        store.initialize.assert_not_called()
+        assert client.get("/api/ready").status_code == 200
+        store.initialize.assert_called_once()
+
+
 class Store:
     def __init__(self):
         self.rows = {}

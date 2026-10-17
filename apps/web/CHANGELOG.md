@@ -1,5 +1,19 @@
 # web
 
+## 0.9.0
+
+### Minor Changes
+
+- 3106e66: The label's free-text details become a ship-to form: recipient, country, street with address suggestions from Photon in the chosen country, postcode and city, printed as three lines.
+- 3106e66: The station's Cmd-K omnibox becomes the Inspector, a docked agent panel built on AI Elements: one thread per order, live tool steps, cited moments that play in place with the detector's boxes, suggestions per bench state, hold Space to talk with a live Canary transcript, and the after-seal check with Repack or Ship as short.
+
+## 0.8.0
+
+### Minor Changes
+
+- f52ff54: API: `POST /chat` streams answers in the AI SDK UI message stream protocol (tool parts, evidence data parts, streamed text, Weave trace link), on one agent loop shared with `POST /ask`.
+- f52ff54: API: after a seal the agent checks the pack clip against the order lines and stores a verdict in `proofbox.checks`, served at `GET /packs/{pack_id}/check`.
+
 ## 0.7.0
 
 ### Minor Changes

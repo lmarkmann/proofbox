@@ -182,6 +182,12 @@ export function usePackSession(
     if (current.tag === "lookup-failed") void bind(current.orderId);
   };
 
+  // a sealed box the after-seal check disputes is packed again as a new pack of the same order
+  const repack = () => {
+    const current = stateRef.current;
+    if (current.tag === "sealed") void bind(current.order.order_id);
+  };
+
   const reset = () => {
     void stopRecording();
     resetCapture();
@@ -205,6 +211,7 @@ export function usePackSession(
     seal,
     retrySeal,
     retryLookup,
+    repack,
     reset,
   };
 }
