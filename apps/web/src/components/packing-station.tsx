@@ -1,15 +1,20 @@
 import { WifiOffIcon } from "lucide-react";
-import { useState } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 import { ActivityLog } from "@/components/activity-log";
 import { AppHeader } from "@/components/app-header";
 import { CameraPanel } from "@/components/camera-panel";
 import { LabelPanel, type PrintedLabel } from "@/components/label-panel";
+import { PackHud, PackPanel } from "@/components/pack-panel";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
+import { VisionOverlay } from "@/components/vision-overlay";
 import { useCamera } from "@/hooks/use-camera";
 import { useOnline } from "@/hooks/use-online";
+import { usePackSession } from "@/hooks/use-pack-session";
 import { type ApiHealth, type PrinterHealth, toPrinterStatus, useProbe } from "@/hooks/use-probe";
+import { useQr } from "@/hooks/use-qr";
+import { useVision } from "@/hooks/use-vision";
 
 export function OfflineBanner() {
   return (
@@ -23,12 +28,65 @@ export function OfflineBanner() {
   );
 }
 
+type FrameSize = { width: number; height: number };
+
+function useFrameSize(video: RefObject<HTMLVideoElement | null>) {
+  const [size, setSize] = useState<FrameSize | null>(null);
+  useEffect(() => {
+    const element = video.current;
+    if (!element) return;
+    const read = () =>
+      setSize(
+        element.videoWidth ? { width: element.videoWidth, height: element.videoHeight } : null,
+      );
+    element.addEventListener("resize", read);
+    element.addEventListener("loadedmetadata", read);
+    return () => {
+      element.removeEventListener("resize", read);
+      element.removeEventListener("loadedmetadata", read);
+    };
+  }, [video]);
+  return size;
+}
+
 export function PackingStation() {
   const api = useProbe<ApiHealth>("/api/health");
   const printer = toPrinterStatus(useProbe<PrinterHealth>("/printer/health"));
   const camera = useCamera();
   const online = useOnline();
   const [labels, setLabels] = useState<PrintedLabel[]>([]);
+
+  const video = useRef<HTMLVideoElement>(null);
+  const frameSize = useFrameSize(video);
+  const showing = camera.state.tag === "live" || camera.state.tag === "file";
+  const qr = useQr(video, showing);
+  const cameraStream = camera.state.tag === "live" ? camera.state.stream : null;
+  const recordingStream = useCallback(
+    () =>
+      cameraStream ??
+      (
+        video.current as (HTMLVideoElement & { captureStream?: () => MediaStream }) | null
+      )?.captureStream?.() ??
+      null,
+    [cameraStream],
+  );
+  const session = usePackSession(qr.stableOrderId, recordingStream);
+  const packing = session.state.tag === "packing" ? session.state : null;
+  const vision = useVision(video, packing?.vocabulary ?? null, session.onDetections);
+  const boundOrderId = "order" in session.state ? session.state.order.order_id : null;
+  const seenOrderId = qr.sighting?.orderId ?? null;
+  const foreignLabel = packing && seenOrderId && seenOrderId !== boundOrderId ? seenOrderId : null;
+
+  useEffect(() => {
+    if (!packing) return;
+    const onKey = (event: KeyboardEvent) => {
+      const typing = event.target instanceof HTMLElement && event.target.closest("input, textarea");
+      if (event.key.toLowerCase() === "s" && !typing && !event.metaKey && !event.ctrlKey)
+        void session.seal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [packing, session]);
 
   return (
     <div className="min-h-svh bg-muted/40">
@@ -51,10 +109,42 @@ export function PackingStation() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
           <div className="min-w-0">
             <PanelBoundary title="Bench camera">
-              <CameraPanel camera={camera.state} onStart={camera.start} onStop={camera.stop} />
+              <CameraPanel
+                camera={camera.state}
+                video={video}
+                onStart={camera.start}
+                onStop={camera.stop}
+                onPlayFile={camera.playFile}
+              >
+                <VisionOverlay
+                  detections={vision.tag === "live" && packing ? vision.detections : []}
+                  qr={qr.sighting}
+                  qrMatches={!boundOrderId || seenOrderId === boundOrderId}
+                  frameSize={frameSize}
+                />
+                <PackHud
+                  state={session.state}
+                  vision={packing ? vision : { tag: "off" }}
+                  recordingSince={session.recordingSince}
+                  foreignLabel={foreignLabel}
+                />
+              </CameraPanel>
             </PanelBoundary>
           </div>
-          <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-stretch">
+          <div className="min-w-0">
+            <PanelBoundary title="Current box">
+              <PackPanel
+                state={session.state}
+                spans={session.spans}
+                tracksByLabel={session.tracksByLabel}
+                onSeal={() => void session.seal()}
+                onRetrySeal={session.retrySeal}
+                onRetryLookup={session.retryLookup}
+                onReset={session.reset}
+              />
+            </PanelBoundary>
+          </div>
+          <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-stretch">
             <PanelBoundary title="Box label">
               <LabelPanel
                 printer={printer}

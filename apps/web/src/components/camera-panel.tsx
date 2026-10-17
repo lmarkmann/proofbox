@@ -1,12 +1,13 @@
 import {
   CameraIcon,
   CameraOffIcon,
+  FileVideoIcon,
   LoaderCircleIcon,
   RotateCcwIcon,
   VideoOffIcon,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -97,6 +98,16 @@ function Stage({ camera, onStart }: { camera: CameraState; onStart: () => void }
           Allow the camera in the browser prompt to continue.
         </StageMessage>
       );
+    case "file":
+      return (
+        <>
+          <Corners />
+          <div className="absolute bottom-5 left-5 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur">
+            <FileVideoIcon className="size-3.5" />
+            {camera.name}
+          </div>
+        </>
+      );
     case "live":
       return (
         <>
@@ -129,19 +140,31 @@ function Stage({ camera, onStart }: { camera: CameraState; onStart: () => void }
 
 export function CameraPanel({
   camera,
+  video,
   onStart,
   onStop,
+  onPlayFile,
+  children,
 }: {
   camera: CameraState;
+  video: RefObject<HTMLVideoElement | null>;
   onStart: () => void;
   onStop: () => void;
+  onPlayFile: (file: File) => void;
+  children?: ReactNode;
 }) {
-  const video = useRef<HTMLVideoElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const stream = camera.tag === "live" ? camera.stream : null;
+  const fileUrl = camera.tag === "file" ? camera.url : null;
+  const showing = Boolean(stream ?? fileUrl);
 
   useEffect(() => {
-    if (video.current) video.current.srcObject = stream;
-  }, [stream]);
+    const element = video.current;
+    if (!element) return;
+    element.srcObject = stream;
+    if (fileUrl) element.src = fileUrl;
+    else element.removeAttribute("src");
+  }, [video, stream, fileUrl]);
 
   return (
     <Card>
@@ -150,8 +173,23 @@ export function CameraPanel({
         <CardDescription>
           Every box is filmed while it is packed; the label links to it.
         </CardDescription>
-        <CardAction>
-          {camera.tag === "live" ? (
+        <CardAction className="flex gap-2">
+          <input
+            ref={fileInput}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onPlayFile(file);
+              event.target.value = "";
+            }}
+          />
+          <Button variant="ghost" size="sm" onClick={() => fileInput.current?.click()}>
+            <FileVideoIcon data-icon="inline-start" />
+            Use a video
+          </Button>
+          {camera.tag === "live" || camera.tag === "file" ? (
             <Button variant="outline" size="sm" onClick={onStop}>
               <CameraOffIcon data-icon="inline-start" />
               Stop
@@ -171,8 +209,10 @@ export function CameraPanel({
             autoPlay
             playsInline
             muted
-            className={stream ? "size-full object-cover" : "hidden"}
+            loop
+            className={showing ? "size-full object-cover" : "hidden"}
           />
+          {showing && children}
           <Stage camera={camera} onStart={onStart} />
         </div>
       </CardContent>

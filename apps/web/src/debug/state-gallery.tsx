@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 
 import { ActivityLog } from "@/components/activity-log";
 import { type Account, UserMenu } from "@/components/app-header";
@@ -72,11 +72,21 @@ function Cell({ name, children }: { name: string; children: ReactNode }) {
   );
 }
 
+function GalleryCamera({ camera }: { camera: CameraState }) {
+  const video = useRef<HTMLVideoElement>(null);
+  return (
+    <CameraPanel camera={camera} video={video} onStart={noop} onStop={noop} onPlayFile={noop} />
+  );
+}
+
 function Throws(): ReactNode {
   throw new Error("Fixture: render threw on purpose");
 }
 
 export default function StateGallery() {
+  // ?states=station runs the live station without signing in, for driving it from a browser script
+  if (new URLSearchParams(window.location.search).get("states") === "station")
+    return <PackingStation />;
   const live: CameraState = { tag: "live", stream: new MediaStream(), resolution: "1280x720" };
   const previews: [string, Preview][] = [
     ["waiting", { tag: "waiting" }],
@@ -175,17 +185,20 @@ export default function StateGallery() {
         <Section title="Bench camera">
           <div className="grid gap-6 md:grid-cols-2">
             <Cell name="off">
-              <CameraPanel camera={{ tag: "off" }} onStart={noop} onStop={noop} />
+              <GalleryCamera camera={{ tag: "off" }} />
             </Cell>
             <Cell name="requesting">
-              <CameraPanel camera={{ tag: "requesting" }} onStart={noop} onStop={noop} />
+              <GalleryCamera camera={{ tag: "requesting" }} />
+            </Cell>
+            <Cell name="file">
+              <GalleryCamera camera={{ tag: "file", url: "", name: "bench-demo.mp4" }} />
             </Cell>
             <Cell name="live (empty fixture stream, so the video is black)">
-              <CameraPanel camera={live} onStart={noop} onStop={noop} />
+              <GalleryCamera camera={live} />
             </Cell>
             {CAMERA_FAILURES.map((failure) => (
               <Cell key={failure} name={`error: ${failure}`}>
-                <CameraPanel camera={{ tag: "error", failure }} onStart={noop} onStop={noop} />
+                <GalleryCamera camera={{ tag: "error", failure }} />
               </Cell>
             ))}
           </div>

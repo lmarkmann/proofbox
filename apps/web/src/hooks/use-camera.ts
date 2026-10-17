@@ -12,6 +12,7 @@ export type CameraState =
   | { tag: "off" }
   | { tag: "requesting" }
   | { tag: "live"; stream: MediaStream; resolution: string | null }
+  | { tag: "file"; url: string; name: string }
   | { tag: "error"; failure: CameraFailure };
 
 function classify(cause: unknown): CameraFailure {
@@ -34,10 +35,13 @@ function classify(cause: unknown): CameraFailure {
 export function useCamera() {
   const [state, setState] = useState<CameraState>({ tag: "off" });
   const stream = useRef<MediaStream | null>(null);
+  const fileUrl = useRef<string | null>(null);
 
   const release = useCallback(() => {
     stream.current?.getTracks().forEach((track) => track.stop());
     stream.current = null;
+    if (fileUrl.current) URL.revokeObjectURL(fileUrl.current);
+    fileUrl.current = null;
   }, []);
 
   const start = useCallback(async () => {
@@ -67,6 +71,15 @@ export function useCamera() {
     }
   }, [release]);
 
+  const playFile = useCallback(
+    (file: File) => {
+      release();
+      fileUrl.current = URL.createObjectURL(file);
+      setState({ tag: "file", url: fileUrl.current, name: file.name });
+    },
+    [release],
+  );
+
   const stop = useCallback(() => {
     release();
     setState({ tag: "off" });
@@ -74,5 +87,5 @@ export function useCamera() {
 
   useEffect(() => release, [release]);
 
-  return { state, start, stop };
+  return { state, start, playFile, stop };
 }

@@ -106,6 +106,8 @@ function cameraReading(camera: CameraState): Reading {
       };
     case "live":
       return { tag: "known", tone: "ok", value: "Live", detail: camera.resolution ?? "Streaming" };
+    case "file":
+      return { tag: "known", tone: "warn", value: "Video file", detail: camera.name };
     case "error":
       return { tag: "known", tone: "down", value: "Unavailable", detail: "See the bench view" };
     default:
