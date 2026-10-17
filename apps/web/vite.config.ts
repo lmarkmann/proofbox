@@ -20,6 +20,11 @@ export default defineConfig({
         target: "http://127.0.0.1:8001",
         rewrite: (path) => path.replace(/^\/printer/, ""),
       },
+      "/vision": {
+        target: "http://127.0.0.1:8002",
+        ws: true,
+        rewrite: (path) => path.replace(/^\/vision/, ""),
+      },
     },
   },
 });

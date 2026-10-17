@@ -6,7 +6,11 @@ const check = process.argv.includes("--check");
 const { version } = JSON.parse(readFileSync("apps/web/package.json", "utf8"));
 const projectVersion = /^(\[project\][^[]*?^version = )"([^"]+)"/ms;
 
-for (const pyprojectPath of ["apps/api/pyproject.toml", "apps/printer/pyproject.toml"]) {
+for (const pyprojectPath of [
+  "apps/api/pyproject.toml",
+  "apps/printer/pyproject.toml",
+  "apps/vision/pyproject.toml",
+]) {
   const pyproject = readFileSync(pyprojectPath, "utf8");
   const found = pyproject.match(projectVersion)?.[2];
   if (!found) throw new Error(`${pyprojectPath} has no [project] version`);

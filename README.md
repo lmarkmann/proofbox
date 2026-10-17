@@ -44,6 +44,7 @@ The demo video goes here.
 | `apps/web`       | React app on Vite+ with Tailwind v4 and shadcn/ui (Base UI primitives, nova style) |
 | `apps/api`       | FastAPI service on Python 3.14, managed by uv                                      |
 | `apps/printer`   | local agent that renders box labels and prints them on a USB JADENS JD-268BT       |
+| `apps/vision`    | local agent that detects the order's items in camera frames with YOLOE-26s         |
 | `docs/assets`    | logo SVGs and `build_logo.py`, which generates them                                |
 | `docs/vast`      | the VAST Builders Challenge guides and reference, copied from the organizers' repo |
 | `.claude/skills` | the organizers' agent skills for the stack (search, ingest, VastDB, GPU models)    |
@@ -56,7 +57,7 @@ Install [pnpm](https://pnpm.io), [uv](https://docs.astral.sh/uv/), [just](https:
 
 ```sh
 just setup   # pnpm install, uv sync, prek install
-just dev     # API on :8000, printer agent on :8001, web on :5173 (proxies /api and /printer)
+just dev     # API on :8000, printer agent on :8001, vision agent on :8002, web on :5173
 just check   # format, lint, typecheck and test every app
 just logo    # regenerate the logo into docs/assets and apps/web/public
 ```

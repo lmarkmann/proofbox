@@ -77,6 +77,13 @@ jobs:
       - name: printer test
         working-directory: apps/printer
         run: uv run --locked pytest -q
+      # syncing apps/vision pulls CUDA torch on Linux, so CI only formats and lints it
+      - name: vision format
+        working-directory: apps/vision
+        run: uvx ruff format --check
+      - name: vision lint
+        working-directory: apps/vision
+        run: uvx ruff check --output-format=github
       - name: workflows
         env:
           GH_TOKEN: ${{ github.token }}
