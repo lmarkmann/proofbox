@@ -1,5 +1,15 @@
 # web
 
+## 0.6.0
+
+### Minor Changes
+
+- e733bd9: The bench camera has a camera picker that prefers an iPhone over Continuity Camera, remembers your pick and falls back to another camera when one drops out; `?replay=/demo/<clip>` plays a demo clip with the same chrome as the live camera.
+- e733bd9: The station reads the box label's QR live, tracks items going in with YOLOE, records the pack and seals it into VAST with its detection track. The API on the lab VM stores orders, packs and tracks in VastDB, answers questions through W&B Inference with Cosmos watching the clip, and transcribes voice with Canary. The header shows a DiceBear avatar and the three-way theme switch, and Activity survives a reload.
+- e733bd9: Public proof page at /proof/:orderId: verdict seal, the packing clip with its detections replayed on the video, a timeline of items going in, a checklist that jumps to each item, and the Cosmos summary of the pack.
+- e733bd9: Label QR codes open the proof page on the deployed Worker, which forwards the four public reads (order, pack video with range requests, detection track, Cosmos summary) to the API and answers 404 to every other /api path. The proof page reads the summary computed at seal instead of asking Cosmos on every visit, and shows "still describing" until it exists. `just tunnel` serves the dev server publicly as a fallback.
+- e733bd9: `just replay <clip> <order>` (the `proofbox-replay` command in apps/vision) tracks a recorded packing clip with the station's model, tracker and vocabulary and seals it as a pack, so the proof page and the omnibox get real evidence without a live camera; an optional render writes a copy with the boxes burned in.
+
 ## 0.5.0
 
 ### Minor Changes
