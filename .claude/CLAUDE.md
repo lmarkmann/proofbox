@@ -11,7 +11,7 @@ Hackathon monorepo, four contributors, `main` protected by `infra/ruleset.json` 
 - `apps/web/wrangler.jsonc` deploys the build as the Worker `proofbox` at `https://proofbox.luis-markmann.workers.dev` via `vp run web#deploy` (never `pnpm deploy`, a pnpm builtin). Its script `apps/web/worker/index.ts` runs first only for `/api/*` and forwards the four public reads allowlisted in `worker/public-api.ts` (order, pack video, track, summary) to the `API_ORIGIN` secret, the API's tunnel URL; every other `/api` path answers 404, so never widen the allowlist to a write. The station builds with `VITE_PROOF_ORIGIN` set to the Worker so label QR codes open there. CI runs `wrangler deploy --dry-run` on every PR, and its `deploy` job (GitHub environment `production`, secret `CLOUDFLARE_API_TOKEN`) deploys every push to `main` after `linux` passes. A manual deploy needs an explicit ask.
 - `docs/vast/`, `.claude/skills/` and `.cursor/rules/vast-builders.mdc` (symlinked as `.claude/rules/vast-builders.md`) are copied from the VAST organizers' repo; `docs/vast/README.md` says how. The root `.gitignore` re-includes `.claude/`, which is ignored globally, except `worktrees/` and `settings.local.json`. Keep the copies byte-identical: they are excluded from `vp fmt` and the whitespace hooks.
 - `docs/assets/build_logo.py` generates the logo; `just logo` rebuilds and copies it into `apps/web/public` and the wordmark into `apps/printer/src/proofbox_printer`. Do not hand-edit the SVGs.
-- `just setup | dev | deploy-api | check | logo | replay` are the entry points.
+- `just setup | dev | deploy-api | tunnel | check | logo | replay` are the entry points.
 
 ## Versioning, CI, hooks
 
