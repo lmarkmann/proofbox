@@ -147,19 +147,27 @@ function Stage({
 function CameraPicker({
   devices,
   deviceId,
+  locked,
   onPick,
 }: {
   devices: CameraDevice[];
   deviceId: string;
+  locked: boolean;
   onPick: (deviceId: string) => void;
 }) {
   return (
     <Select
+      disabled={locked}
       items={devices.map((device) => ({ value: device.id, label: device.label }))}
       value={deviceId}
       onValueChange={(id) => id && id !== deviceId && onPick(id)}
     >
-      <SelectTrigger size="sm" aria-label="Camera" className="max-w-48">
+      <SelectTrigger
+        size="sm"
+        aria-label="Camera"
+        title={locked ? "Seal or discard the box to switch cameras" : undefined}
+        className="max-w-48"
+      >
         <SelectValue className="truncate" />
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false} align="end" className="w-auto max-w-80">
@@ -195,6 +203,7 @@ export function CameraPanel({
   onStart,
   onStop,
   onPlayFile,
+  switchLocked = false,
   children,
 }: {
   camera: CameraState;
@@ -202,6 +211,7 @@ export function CameraPanel({
   onStart: (deviceId?: string) => void;
   onStop: () => void;
   onPlayFile: (file: File) => void;
+  switchLocked?: boolean;
   children?: ReactNode;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -227,7 +237,12 @@ export function CameraPanel({
         </CardDescription>
         <CardAction className="flex max-w-56 flex-wrap justify-end gap-2 sm:max-w-none">
           {camera.tag === "live" && camera.devices.length > 0 && (
-            <CameraPicker devices={camera.devices} deviceId={camera.deviceId} onPick={onStart} />
+            <CameraPicker
+              devices={camera.devices}
+              deviceId={camera.deviceId}
+              locked={switchLocked}
+              onPick={onStart}
+            />
           )}
           <input
             ref={fileInput}

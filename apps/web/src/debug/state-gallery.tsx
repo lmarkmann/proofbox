@@ -6,11 +6,13 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { CameraPanel } from "@/components/camera-panel";
 import { type Preview, PreviewFrame, type PrintJob, PrintFeedback } from "@/components/label-panel";
 import { OfflineBanner, PackingStation } from "@/components/packing-station";
+import { PackHud } from "@/components/pack-panel";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
 import { AuthSplash } from "@/App";
 import { demoOrder, demoPoints, demoSummary, demoVideoUrl } from "@/debug/pack-demo";
 import type { CameraDevice, CameraFailure, CameraState } from "@/hooks/use-camera";
+import type { PackState } from "@/hooks/use-pack-session";
 import type { PrinterStatus } from "@/hooks/use-probe";
 import type { PrinterFailure } from "@/lib/printer";
 import { ProofView } from "@/proof/proof-page";
@@ -20,6 +22,7 @@ import type { ProofState, SummaryState } from "@/proof/use-proof";
 const AT = new Date("2026-10-17T14:32:00");
 const SAMPLE_IMAGE = "/proofbox-wordmark.svg";
 const noop = () => {};
+const RECORDING_SINCE = Date.now() - 42_000;
 
 const CAMERA_FAILURES: CameraFailure[] = [
   "denied",
@@ -137,10 +140,27 @@ function Cell({ name, children }: { name: string; children: ReactNode }) {
   );
 }
 
-function GalleryCamera({ camera }: { camera: CameraState }) {
+function GalleryCamera({
+  camera,
+  switchLocked,
+  children,
+}: {
+  camera: CameraState;
+  switchLocked?: boolean;
+  children?: ReactNode;
+}) {
   const video = useRef<HTMLVideoElement>(null);
   return (
-    <CameraPanel camera={camera} video={video} onStart={noop} onStop={noop} onPlayFile={noop} />
+    <CameraPanel
+      camera={camera}
+      video={video}
+      onStart={noop}
+      onStop={noop}
+      onPlayFile={noop}
+      switchLocked={switchLocked}
+    >
+      {children}
+    </CameraPanel>
   );
 }
 
@@ -170,6 +190,19 @@ export default function StateGallery() {
     ["live, long device label", liveOn(USB_CAMERA.id, [MAC_CAMERA, USB_CAMERA])],
     ["replay from ?replay=/demo/pack-demo.mp4 (data-source=file)", REPLAY],
   ];
+  const midPack: [string, CameraState][] = [
+    ["packing: picker locked, hover says why", liveOn(PHONE_CAMERA.id, [MAC_CAMERA, PHONE_CAMERA])],
+    [
+      "iPhone dropped mid-pack: fell back to the built-in camera, still locked; the clip keeps what was recorded and Seal ships it",
+      liveOn(MAC_CAMERA.id, [MAC_CAMERA]),
+    ],
+  ];
+  const packingState: PackState = {
+    tag: "packing",
+    order: demoOrder,
+    packId: "demo",
+    vocabulary: demoOrder.items.map((item) => item.name),
+  };
   const previews: [string, Preview][] = [
     ["waiting", { tag: "waiting" }],
     ["rendering, first", { tag: "rendering", previous: null }],
@@ -285,6 +318,18 @@ export default function StateGallery() {
             {cameras.map(([name, camera]) => (
               <Cell key={name} name={name}>
                 <GalleryCamera camera={camera} />
+              </Cell>
+            ))}
+            {midPack.map(([name, camera]) => (
+              <Cell key={name} name={name}>
+                <GalleryCamera camera={camera} switchLocked>
+                  <PackHud
+                    state={packingState}
+                    vision={{ tag: "off" }}
+                    recordingSince={RECORDING_SINCE}
+                    foreignLabel={null}
+                  />
+                </GalleryCamera>
               </Cell>
             ))}
             {CAMERA_FAILURES.map((failure) => (

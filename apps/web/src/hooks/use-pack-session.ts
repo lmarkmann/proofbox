@@ -51,6 +51,7 @@ export function usePackSession(
   stateRef.current = state;
 
   const recorder = useRef<MediaRecorder | null>(null);
+  const recorded = useRef<Promise<Blob | null> | null>(null);
   const chunks = useRef<Blob[]>([]);
   const zero = useRef<number | null>(null);
   const track = useRef<TrackPoint[]>([]);
@@ -73,6 +74,12 @@ export function usePackSession(
     media.ondataavailable = (event) => {
       if (event.data.size > 0) chunks.current.push(event.data);
     };
+    // A camera that drops mid-pack ends the stream and stops the recorder on its own; the
+    // clip then holds everything up to the drop and sealing still ships it.
+    recorded.current = new Promise((resolve) => {
+      media.onstop = () =>
+        resolve(chunks.current.length ? new Blob(chunks.current, { type: media.mimeType }) : null);
+    });
     media.onstart = () => {
       zero.current = performance.now();
       setRecordingSince(Date.now());
@@ -81,14 +88,15 @@ export function usePackSession(
     recorder.current = media;
   };
 
-  const stopRecording = () =>
-    new Promise<Blob | null>((resolve) => {
-      const media = recorder.current;
-      recorder.current = null;
-      if (!media || media.state === "inactive") return resolve(null);
-      media.onstop = () => resolve(new Blob(chunks.current, { type: media.mimeType }));
-      media.stop();
-    });
+  const stopRecording = async () => {
+    const media = recorder.current;
+    const clipDone = recorded.current;
+    recorder.current = null;
+    recorded.current = null;
+    if (!media || !clipDone) return null;
+    if (media.state !== "inactive") media.stop();
+    return clipDone;
+  };
 
   const bind = useCallback(
     async (orderId: string) => {

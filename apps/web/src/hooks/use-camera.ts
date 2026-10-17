@@ -122,6 +122,7 @@ export function useCamera() {
   const fileUrl = useRef<string | null>(null);
   const attempt = useRef(0);
   const onTrackEnded = useRef(() => {});
+  const switchLocked = useRef(false);
 
   const release = useCallback(() => {
     if (stream.current) halt(stream.current);
@@ -171,7 +172,7 @@ export function useCamera() {
   );
 
   // On a camera plugging in or dropping out: keep the current one if it is still the best
-  // choice, otherwise move to the preferred or any remaining camera.
+  // choice or switching is locked, otherwise move to the preferred or any remaining camera.
   const fallBack = useCallback(async () => {
     const media = stream.current;
     if (!media) return;
@@ -182,7 +183,7 @@ export function useCamera() {
       media.getVideoTracks()[0]?.readyState === "live" &&
       devices.some((device) => device.id === id);
     const target = preferredCamera(devices, rememberedCamera()) ?? (alive ? id : devices[0]?.id);
-    if (alive && target === id) {
+    if (alive && (switchLocked.current || target === id)) {
       setState((now) => (now.tag === "live" && now.stream === media ? { ...now, devices } : now));
     } else if (target) {
       await connect(target);
@@ -207,6 +208,16 @@ export function useCamera() {
       await connect(deviceId);
     },
     [connect, release],
+  );
+
+  // While a box is being recorded only a dropped camera may be replaced; unlocking catches up
+  // on any switch that waited, such as the phone coming back.
+  const lockSwitch = useCallback(
+    (locked: boolean) => {
+      switchLocked.current = locked;
+      if (!locked) void fallBack();
+    },
+    [fallBack],
   );
 
   const playFile = useCallback(
@@ -242,5 +253,5 @@ export function useCamera() {
     [release],
   );
 
-  return { state, start, playFile, stop };
+  return { state, start, playFile, stop, lockSwitch };
 }
