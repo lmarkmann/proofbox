@@ -94,7 +94,7 @@ export function LabelPanel({
             Up to {MAX_LINES} lines, printed at the bottom of the label.
           </p>
         </div>
-        <div className="mx-auto grid aspect-[776/1168] w-full max-w-56 place-items-center overflow-hidden rounded-lg border bg-muted/40">
+        <div className="mx-auto grid aspect-[776/1156] w-full max-w-56 place-items-center overflow-hidden rounded-lg border bg-muted/40">
           {previewUrl ? (
             <img
               src={previewUrl}
