@@ -36,6 +36,7 @@ from proofbox_api.packing import (
     count_tracks,
     find_clip,
     judge,
+    remux,
 )
 from proofbox_api.store import Store
 from proofbox_api.vss import VSS
@@ -202,12 +203,16 @@ async def seal_pack(
 
     content_type = video.content_type or "video/mp4"
     suffix = ".webm" if "webm" in content_type else ".mp4"
-    clip = await video.read()
-    (svc.packs_dir / f"{pack_id}{suffix}").write_bytes(clip)
+    recorded = svc.packs_dir / f"{pack_id}.recorded{suffix}"
+    recorded.write_bytes(await video.read())
+    clip_path = svc.packs_dir / f"{pack_id}{suffix}"
+    remux_error = await remux(recorded, clip_path)
+    clip = clip_path.read_bytes()
 
     counts = count_tracks(points)
     expected = ", ".join(f"{item.qty} x {item.name}" for item in order.items)
-    object_key = upload_error = None
+    object_key = None
+    errors = [remux_error] if remux_error else []
     try:
         object_key = await svc.vss.upload(
             f"{order.order_id}_{pack_id}{suffix}",
@@ -220,7 +225,7 @@ async def seal_pack(
             "and say whether any expected item is missing or anything else was packed.",
         )
     except httpx.HTTPError as error:
-        upload_error = f"{type(error).__name__}: {error}"
+        errors.append(f"VSS upload {type(error).__name__}: {error}")
 
     sealed = Pack(
         pack_id=pack_id,
@@ -238,7 +243,7 @@ async def seal_pack(
         counts=counts,
         verdict=sealed.verdict,
         object_key=object_key,
-        upload_error=upload_error,
+        upload_error="; ".join(errors) or None,
     )
 
 

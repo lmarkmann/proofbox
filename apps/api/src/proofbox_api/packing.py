@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -68,3 +69,27 @@ def find_clip(packs_dir: Path, pack_id: str) -> Path | None:
         ),
         None,
     )
+
+
+async def remux(recorded: Path, clip: Path) -> str | None:
+    faststart = ["-movflags", "+faststart"] if clip.suffix == ".mp4" else []
+    ffmpeg = await asyncio.create_subprocess_exec(
+        "ffmpeg",
+        "-y",
+        "-v",
+        "error",
+        "-i",
+        recorded,
+        "-c",
+        "copy",
+        *faststart,
+        clip,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await ffmpeg.communicate()
+    if ffmpeg.returncode:
+        recorded.replace(clip)
+        return f"remux failed, kept the recording as is: {stderr.decode().strip()[-300:]}"
+    recorded.unlink()
+    return None
