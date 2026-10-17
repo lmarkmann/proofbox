@@ -1,6 +1,7 @@
 import { useAuth } from "@workos-inc/authkit-react";
 import { lazy, Suspense, useEffect } from "react";
 
+import { NotFoundPage } from "@/components/not-found-page";
 import { PackingStation } from "@/components/packing-station";
 import { SignInScreen } from "@/components/sign-in-screen";
 import { ProofPage } from "@/proof/proof-page";
@@ -60,6 +61,10 @@ export function App() {
       );
     return <ProofPage orderId={proofId} />;
   }
+
+  // "/" is also where WorkOS returns after sign-in; every other path is a dead link
+  const { pathname } = window.location;
+  if (pathname !== "/" && pathname !== "/login") return <NotFoundPage pathname={pathname} />;
 
   if (isLoading) return <AuthSplash />;
 
