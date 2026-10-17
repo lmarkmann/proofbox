@@ -1,5 +1,11 @@
 # web
 
+## 0.4.0
+
+### Minor Changes
+
+- 22a2b5a: Sign in with WorkOS AuthKit before the interface loads, and deploy the web app as the Cloudflare Worker proofbox.
+
 ## 0.3.0
 
 ### Minor Changes
