@@ -128,3 +128,24 @@
     @apply font-sans;
   }
 }
+
+/* Loading cues wait 200ms, so a fast response never flashes a skeleton or a dimmed preview. */
+@utility appear-late {
+  animation: appear-late 150ms ease-out 200ms both;
+}
+
+@utility dim-late {
+  animation: dim-late 150ms ease-out 200ms both;
+}
+
+@keyframes appear-late {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dim-late {
+  to {
+    opacity: 0.6;
+  }
+}
