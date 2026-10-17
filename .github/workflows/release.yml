@@ -61,7 +61,7 @@ jobs:
           PR: ${{ steps.changesets.outputs.pr-number }}
         run: gh pr merge --auto --squash "$PR"
       - name: tag
-        if: steps.changesets.outputs.hasChangesets == 'false'
+        if: steps.changesets.outputs.has-changesets == 'false'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           GH_REPO: ${{ github.repository }}
