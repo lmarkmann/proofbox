@@ -16,11 +16,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AddressFields } from "@/components/address-fields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import type { PrinterStatus } from "@/hooks/use-probe";
+import { type Address, addressLines, EMPTY_ADDRESS } from "@/lib/address";
 import { assertNever } from "@/lib/assert-never";
 import {
   type LabelRequest,
@@ -32,7 +33,6 @@ import {
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/components/status-strip";
 
-export const MAX_LINES = 3;
 const PREVIEW_DEBOUNCE_MS = 350;
 // the QR must open somewhere a phone can reach, so a demo on localhost points it at a public origin
 const PROOF_ORIGIN: string = import.meta.env.VITE_PROOF_ORIGIN || window.location.origin;
@@ -217,26 +217,18 @@ export function LabelPanel({
   onPrinted: (label: PrintedLabel) => void;
 }) {
   const [orderId, setOrderId] = useState("");
-  const [details, setDetails] = useState("");
+  const [address, setAddress] = useState<Address>(EMPTY_ADDRESS);
   const [preview, setPreview] = useState<Preview>({ tag: "waiting" });
   const [job, setJob] = useState<PrintJob>({ tag: "idle" });
   const orderInput = useRef<HTMLInputElement>(null);
   const shownUrl = useRef<string | null>(null);
 
-  const lines = details
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
   const label: LabelRequest = {
     order_id: orderId.trim(),
     proof_url: `${PROOF_ORIGIN}/proof/${encodeURIComponent(orderId.trim())}`,
-    lines,
+    lines: addressLines(address),
   };
-  const linesError =
-    lines.length > MAX_LINES
-      ? `Keep it to ${MAX_LINES} lines; the label has room for three.`
-      : null;
-  const valid = Boolean(label.order_id) && !linesError;
+  const valid = Boolean(label.order_id);
   const labelKey = valid ? JSON.stringify(label) : null;
 
   useEffect(() => {
@@ -286,7 +278,6 @@ export function LabelPanel({
       orderInput.current?.focus();
       return;
     }
-    if (!valid) return;
     setJob({ tag: "printing" });
     try {
       await printLabel(label);
@@ -294,7 +285,7 @@ export function LabelPanel({
       onPrinted(printed);
       setJob({ tag: "printed", ...printed });
       setOrderId("");
-      setDetails("");
+      setAddress((current) => ({ ...EMPTY_ADDRESS, country: current.country }));
       orderInput.current?.focus();
     } catch (cause) {
       setJob({ tag: "failed", failure: toPrinterFailure(cause) });
@@ -326,34 +317,7 @@ export function LabelPanel({
             onChange={(event) => edit(() => setOrderId(event.target.value))}
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between">
-            <Label htmlFor="details">Details</Label>
-            <span
-              className={cn(
-                "text-xs tabular-nums",
-                linesError ? "text-destructive" : "text-muted-foreground",
-              )}
-            >
-              {lines.length}/{MAX_LINES} lines
-            </span>
-          </div>
-          <Textarea
-            id="details"
-            rows={3}
-            placeholder={"3 items, 2 cartons\nAcme GmbH, Berlin"}
-            value={details}
-            onChange={(event) => edit(() => setDetails(event.target.value))}
-            aria-invalid={Boolean(linesError)}
-            aria-describedby="details-hint"
-          />
-          <p
-            id="details-hint"
-            className={cn("text-xs", linesError ? "text-destructive" : "text-muted-foreground")}
-          >
-            {linesError ?? "Printed at the bottom of the label, one line each."}
-          </p>
-        </div>
+        <AddressFields address={address} onChange={(update) => edit(() => setAddress(update))} />
         <PreviewFrame preview={valid ? preview : { tag: "waiting" }} orderId={label.order_id} />
       </CardContent>
       <CardFooter className="flex-col items-stretch gap-3">

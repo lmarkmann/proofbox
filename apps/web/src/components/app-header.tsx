@@ -2,7 +2,7 @@ import { notionists } from "@dicebear/collection";
 import { createAvatar } from "@dicebear/core";
 import { type User, useAuth } from "@workos-inc/authkit-react";
 import { LogOutIcon } from "lucide-react";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -67,17 +67,18 @@ export function UserMenu({ user, onSignOut }: { user: Account; onSignOut: () => 
   );
 }
 
-export function AppHeader() {
+export function AppHeader({ children }: { children?: ReactNode }) {
   const { user, signOut } = useAuth();
   return (
     <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 xl:group-has-data-[slot=inspector]/station:max-w-none">
         <a href="/" className="shrink-0" aria-label="ProofBox home">
           <img src="/proofbox-wordmark.svg" alt="ProofBox" className="h-7 dark:invert" />
         </a>
         <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
         <span className="hidden text-sm text-muted-foreground sm:block">Packing station</span>
         <div className="ml-auto flex items-center gap-3">
+          {children}
           <ThemeSwitch />
           {user && <UserMenu user={user} onSignOut={() => signOut()} />}
         </div>
