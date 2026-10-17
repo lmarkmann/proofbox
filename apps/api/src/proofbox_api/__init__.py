@@ -17,6 +17,7 @@ from fastapi import (
     Form,
     HTTPException,
     Path as PathParam,
+    Query,
     Request,
     UploadFile,
 )
@@ -117,6 +118,10 @@ class OrderDetail(Order):
     packs: list[PackSummary]
 
 
+class SealedPack(PackSummary):
+    order_id: str
+
+
 class NewPack(BaseModel):
     order_id: str
 
@@ -165,6 +170,16 @@ def get_order(svc: Svc, order_id: str) -> OrderDetail:
         for pack in svc.store.packs(order_id)
     ]
     return OrderDetail(**order.model_dump(), packs=packs)
+
+
+@app.get("/packs")
+def list_packs(
+    svc: Svc, limit: Annotated[int, Query(ge=1, le=200)] = 20
+) -> list[SealedPack]:
+    return [
+        SealedPack.model_validate(pack, from_attributes=True)
+        for pack in svc.store.recent_packs(limit)
+    ]
 
 
 @app.post("/packs")

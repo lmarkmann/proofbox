@@ -68,7 +68,8 @@ TOOLS: list[ChatCompletionToolParam] = [
 
 SYSTEM_PROMPT = """You answer questions about orders packed at the ProofBox station.
 Ground every claim in tool results: get_order for expected items and the detector counts and verdict of each sealed pack, watch_pack to have Cosmos look at a pack's clip, search_archive for the video archive.
-Answer in two to four sentences and name the pack ids you relied on."""
+For what went into a box or whether anything is missing, start with get_order, then watch_pack on its latest pack, and compare what was seen with the order's item lines; the detector counts can miss items, the clip is the stronger evidence.
+Answer in two to four sentences: end with a verdict of complete, short (name what is missing) or unexpected (name what is extra), and name the pack ids you relied on."""
 
 
 class Evidence(BaseModel):

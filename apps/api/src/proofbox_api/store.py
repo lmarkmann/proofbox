@@ -135,6 +135,12 @@ class Store:
         rows = self.select("packs", _.pack_id == pack_id)
         return pack_from_row(rows[0]) if rows else None
 
+    def recent_packs(self, limit: int) -> list[Pack]:
+        packs = map(pack_from_row, self.select("packs"))
+        return sorted(packs, key=lambda pack: pack.sealed_at, reverse=True)[
+            :limit
+        ]
+
     def packs_by_object_key(self) -> dict[str, Pack]:
         return {
             row["object_key"]: pack_from_row(row)
