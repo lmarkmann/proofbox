@@ -34,6 +34,8 @@ import { formatTime } from "@/components/status-strip";
 
 export const MAX_LINES = 3;
 const PREVIEW_DEBOUNCE_MS = 350;
+// the QR must open somewhere a phone can reach, so a demo on localhost points it at a public origin
+const PROOF_ORIGIN: string = import.meta.env.VITE_PROOF_ORIGIN || window.location.origin;
 
 export type Preview =
   | { tag: "waiting" }
@@ -227,7 +229,7 @@ export function LabelPanel({
     .filter(Boolean);
   const label: LabelRequest = {
     order_id: orderId.trim(),
-    proof_url: `${window.location.origin}/proof/${encodeURIComponent(orderId.trim())}`,
+    proof_url: `${PROOF_ORIGIN}/proof/${encodeURIComponent(orderId.trim())}`,
     lines,
   };
   const linesError =
