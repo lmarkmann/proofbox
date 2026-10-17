@@ -1,0 +1,35 @@
+[
+  {
+    "order_id": "PB-1001",
+    "customer": "Kestrel Labs",
+    "items": [
+      { "name": "coffee mug", "qty": 1 },
+      { "name": "scissors", "qty": 1 },
+      { "name": "roll of tape", "qty": 1 }
+    ]
+  },
+  {
+    "order_id": "PB-1002",
+    "customer": "Oakline Studio",
+    "items": [
+      { "name": "water bottle", "qty": 2 },
+      { "name": "notebook", "qty": 1 }
+    ]
+  },
+  {
+    "order_id": "PB-1003",
+    "customer": "Pelican Grocers",
+    "items": [
+      { "name": "banana", "qty": 2 },
+      { "name": "apple", "qty": 1 }
+    ]
+  },
+  {
+    "order_id": "PB-1004",
+    "customer": "Brightdesk",
+    "items": [
+      { "name": "pen", "qty": 3 },
+      { "name": "stapler", "qty": 1 }
+    ]
+  }
+]

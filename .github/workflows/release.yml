@@ -9,6 +9,11 @@ on:
   push:
     branches: [main]
 
+# one release run at a time, never cancelled: two quick pushes to main would otherwise race on the version PR and the tag
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:

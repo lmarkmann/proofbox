@@ -1,21 +1,28 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 
 import { ActivityLog } from "@/components/activity-log";
 import { type Account, UserMenu } from "@/components/app-header";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { CameraPanel } from "@/components/camera-panel";
 import { type Preview, PreviewFrame, type PrintJob, PrintFeedback } from "@/components/label-panel";
 import { OfflineBanner, PackingStation } from "@/components/packing-station";
+import { PackHud } from "@/components/pack-panel";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
 import { AuthSplash } from "@/App";
-import type { CameraFailure, CameraState } from "@/hooks/use-camera";
+import { demoOrder, demoPoints, demoSummary, demoVideoUrl } from "@/debug/pack-demo";
+import type { CameraDevice, CameraFailure, CameraState } from "@/hooks/use-camera";
+import type { PackState } from "@/hooks/use-pack-session";
 import type { PrinterStatus } from "@/hooks/use-probe";
 import type { PrinterFailure } from "@/lib/printer";
+import { ProofView } from "@/proof/proof-page";
+import type { ProofState, SummaryState } from "@/proof/use-proof";
 
 // Pinned fixtures: fixed times, and a sample image standing in for a rendered label.
 const AT = new Date("2026-10-17T14:32:00");
 const SAMPLE_IMAGE = "/proofbox-wordmark.svg";
 const noop = () => {};
+const RECORDING_SINCE = Date.now() - 42_000;
 
 const CAMERA_FAILURES: CameraFailure[] = [
   "denied",
@@ -25,14 +32,34 @@ const CAMERA_FAILURES: CameraFailure[] = [
   "disconnected",
   "unknown",
 ];
+const MAC_CAMERA: CameraDevice = { id: "cam-builtin", label: "FaceTime HD Camera" };
+const PHONE_CAMERA: CameraDevice = { id: "cam-iphone", label: "Sam's iPhone Camera" };
+const DESK_VIEW: CameraDevice = { id: "cam-desk", label: "Sam's iPhone Desk View Camera" };
+const USB_CAMERA: CameraDevice = {
+  id: "cam-usb",
+  label: "Logitech BRIO 4K Stream Edition (046d:085e)",
+};
+const REPLAY: CameraState = {
+  tag: "file",
+  url: demoVideoUrl,
+  name: "pack-demo.mp4",
+  loop: false,
+};
 const ACCOUNTS: [string, Account][] = [
   [
     "named, no picture",
-    { email: "packer@example.com", firstName: "Sam", lastName: "Rivera", profilePictureUrl: null },
+    {
+      id: "user_01SAMPLEPACKER",
+      email: "packer@example.com",
+      firstName: "Sam",
+      lastName: "Rivera",
+      profilePictureUrl: null,
+    },
   ],
   [
     "email only, long address",
     {
+      id: "user_01SAMPLENIGHTSHIFT",
       email: "night-shift.station-04@fulfilment.example.com",
       firstName: null,
       lastName: null,
@@ -54,6 +81,48 @@ const PRINTER_STATUSES: PrinterStatus[] = [
   { tag: "ready", version: "0.2.0" },
 ];
 
+const DEMO_PACK = demoOrder.packs[0];
+const packed = (
+  pack: Partial<typeof DEMO_PACK>,
+  track: Extract<ProofState, { tag: "packed" }>["track"] = { tag: "ready", points: demoPoints },
+): ProofState => ({
+  tag: "packed",
+  order: demoOrder,
+  pack: { ...DEMO_PACK, ...pack },
+  video: demoVideoUrl,
+  track,
+});
+const SUMMARY_READY: SummaryState = {
+  tag: "ready",
+  summary: { pack_id: DEMO_PACK.pack_id, text: demoSummary, evidence: [] },
+};
+const PROOF_STATES: [string, ProofState, SummaryState][] = [
+  ["loading", { tag: "loading" }, { tag: "loading" }],
+  ["not found", { tag: "not-found" }, { tag: "loading" }],
+  ["API unreachable", { tag: "unreachable" }, { tag: "loading" }],
+  [
+    "order exists, not packed yet",
+    { tag: "not-packed", order: { ...demoOrder, packs: [] } },
+    { tag: "loading" },
+  ],
+  [
+    "short: card never seen",
+    packed(
+      { verdict: "short", counts: { mug: 1, "coffee beans": 1 } },
+      { tag: "ready", points: demoPoints.filter((point) => point.label !== "card") },
+    ),
+    SUMMARY_READY,
+  ],
+  [
+    "unexpected: tape not on the order",
+    packed({ verdict: "unexpected", counts: { ...DEMO_PACK.counts, tape: 1 } }),
+    SUMMARY_READY,
+  ],
+  ["summary not ready yet", packed({}), { tag: "pending" }],
+  ["detections still loading, summary loading", packed({}, { tag: "loading" }), { tag: "loading" }],
+  ["detections failed, summary failed", packed({}, { tag: "failed" }), { tag: "failed" }],
+];
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
@@ -72,12 +141,69 @@ function Cell({ name, children }: { name: string; children: ReactNode }) {
   );
 }
 
+function GalleryCamera({
+  camera,
+  switchLocked,
+  children,
+}: {
+  camera: CameraState;
+  switchLocked?: boolean;
+  children?: ReactNode;
+}) {
+  const video = useRef<HTMLVideoElement>(null);
+  return (
+    <CameraPanel
+      camera={camera}
+      video={video}
+      onStart={noop}
+      onStop={noop}
+      onPlayFile={noop}
+      switchLocked={switchLocked}
+    >
+      {children}
+    </CameraPanel>
+  );
+}
+
 function Throws(): ReactNode {
   throw new Error("Fixture: render threw on purpose");
 }
 
 export default function StateGallery() {
-  const live: CameraState = { tag: "live", stream: new MediaStream(), resolution: "1280x720" };
+  // ?states=station runs the live station without signing in, for driving it from a browser script
+  if (new URLSearchParams(window.location.search).get("states") === "station")
+    return <PackingStation />;
+  const liveOn = (deviceId: string, devices: CameraDevice[]): CameraState => ({
+    tag: "live",
+    stream: new MediaStream(),
+    resolution: "1280x720",
+    deviceId,
+    devices,
+  });
+  const live = liveOn(MAC_CAMERA.id, [MAC_CAMERA]);
+  const cameras: [string, CameraState][] = [
+    ["live, one camera", live],
+    [
+      "live, iPhone picked by default",
+      liveOn(PHONE_CAMERA.id, [MAC_CAMERA, PHONE_CAMERA, DESK_VIEW]),
+    ],
+    ["live, iPhone dropped, fell back to the built-in camera", liveOn(MAC_CAMERA.id, [MAC_CAMERA])],
+    ["live, long device label", liveOn(USB_CAMERA.id, [MAC_CAMERA, USB_CAMERA])],
+    ["replay from ?replay=/demo/pack-demo.mp4 (data-source=file)", REPLAY],
+  ];
+  const midPack: [string, CameraState][] = [
+    ["packing: picker locked, hover says why", liveOn(PHONE_CAMERA.id, [MAC_CAMERA, PHONE_CAMERA])],
+    [
+      "iPhone dropped mid-pack: fell back to the built-in camera, still locked; the clip keeps what was recorded and Seal ships it",
+      liveOn(MAC_CAMERA.id, [MAC_CAMERA]),
+    ],
+  ];
+  const packingState: PackState = {
+    tag: "packing",
+    order: demoOrder,
+    packId: "demo",
+    vocabulary: demoOrder.items.map((item) => item.name),
+  };
   const previews: [string, Preview][] = [
     ["waiting", { tag: "waiting" }],
     ["rendering, first", { tag: "rendering", previous: null }],
@@ -123,9 +249,10 @@ export default function StateGallery() {
 
         <Section title="Account menu">
           <div className="grid gap-6 md:grid-cols-2">
-            {ACCOUNTS.map(([name, account]) => (
+            {ACCOUNTS.map(([name, account], index) => (
               <Cell key={name} name={name}>
-                <div className="flex justify-end rounded-xl bg-background p-2 ring-1 ring-foreground/10">
+                <div className="flex items-center justify-end gap-3 rounded-xl bg-background p-2 ring-1 ring-foreground/10">
+                  {index === 0 && <ThemeSwitch />}
                   <UserMenu user={account} onSignOut={noop} />
                 </div>
               </Cell>
@@ -161,6 +288,15 @@ export default function StateGallery() {
               lastLabelAt={null}
             />
           </Cell>
+          <Cell name="replaying a clip">
+            <StatusStrip
+              api={{ tag: "up", body: { status: "ok", version: "0.2.0" } }}
+              printer={{ tag: "ready", version: "0.2.0" }}
+              camera={REPLAY}
+              labelCount={12}
+              lastLabelAt={AT}
+            />
+          </Cell>
           <Cell name="printer unplugged, camera asking">
             <StatusStrip
               api={{ tag: "up", body: { status: "ok", version: "0.2.0" } }}
@@ -172,20 +308,34 @@ export default function StateGallery() {
           </Cell>
         </Section>
 
-        <Section title="Bench camera">
+        <Section title="Bench camera (live fixtures have an empty stream, so the video is black)">
           <div className="grid gap-6 md:grid-cols-2">
             <Cell name="off">
-              <CameraPanel camera={{ tag: "off" }} onStart={noop} onStop={noop} />
+              <GalleryCamera camera={{ tag: "off" }} />
             </Cell>
             <Cell name="requesting">
-              <CameraPanel camera={{ tag: "requesting" }} onStart={noop} onStop={noop} />
+              <GalleryCamera camera={{ tag: "requesting" }} />
             </Cell>
-            <Cell name="live (empty fixture stream, so the video is black)">
-              <CameraPanel camera={live} onStart={noop} onStop={noop} />
-            </Cell>
+            {cameras.map(([name, camera]) => (
+              <Cell key={name} name={name}>
+                <GalleryCamera camera={camera} />
+              </Cell>
+            ))}
+            {midPack.map(([name, camera]) => (
+              <Cell key={name} name={name}>
+                <GalleryCamera camera={camera} switchLocked>
+                  <PackHud
+                    state={packingState}
+                    vision={{ tag: "off" }}
+                    recordingSince={RECORDING_SINCE}
+                    foreignLabel={null}
+                  />
+                </GalleryCamera>
+              </Cell>
+            ))}
             {CAMERA_FAILURES.map((failure) => (
               <Cell key={failure} name={`error: ${failure}`}>
-                <CameraPanel camera={{ tag: "error", failure }} onStart={noop} onStop={noop} />
+                <GalleryCamera camera={{ tag: "error", failure }} />
               </Cell>
             ))}
           </div>
@@ -216,18 +366,53 @@ export default function StateGallery() {
         <Section title="Activity">
           <div className="grid gap-6 md:grid-cols-2">
             <Cell name="empty, first run">
-              <ActivityLog labels={[]} onStart={noop} />
+              <ActivityLog labels={[]} history={[]} onStart={noop} />
             </Cell>
-            <Cell name="three labels">
+            <Cell name="sealed packs after a reload">
+              <ActivityLog
+                labels={[{ orderId: "PB-1003", at: new Date("2026-10-17T14:52:00") }]}
+                history={[
+                  {
+                    pack_id: "pk_2",
+                    order_id: "PB-1002",
+                    sealed_at: "2026-10-17T14:47:00Z",
+                    verdict: "short",
+                    counts: { "water bottle": 1, notebook: 1 },
+                  },
+                  {
+                    pack_id: "pk_1",
+                    order_id: "PB-1001",
+                    sealed_at: "2026-10-17T14:39:00Z",
+                    verdict: "complete",
+                    counts: { "coffee mug": 1, scissors: 1, "roll of tape": 1 },
+                  },
+                ]}
+                onStart={noop}
+              />
+            </Cell>
+            <Cell name="three labels, API offline">
               <ActivityLog
                 labels={[
                   { orderId: "PB-20483", at: new Date("2026-10-17T14:41:00") },
                   { orderId: "PB-20482", at: new Date("2026-10-17T14:36:00") },
                   { orderId: "PB-20481", at: AT },
                 ]}
+                history="unavailable"
                 onStart={noop}
               />
             </Cell>
+          </div>
+        </Section>
+
+        <Section title="Proof page">
+          <div className="grid gap-6">
+            {PROOF_STATES.map(([name, state, summary]) => (
+              <Cell key={name} name={name}>
+                <div className="h-[52rem] overflow-hidden rounded-xl ring-1 ring-foreground/10 [&>div]:min-h-full">
+                  <ProofView orderId="PB-DEMO" state={state} summary={summary} onRetry={noop} />
+                </div>
+              </Cell>
+            ))}
           </div>
         </Section>
 

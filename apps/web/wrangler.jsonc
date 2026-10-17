@@ -3,6 +3,10 @@
   "name": "proofbox",
   "account_id": "da6d99959e1dda5394e5e0df5aadc961",
   "compatibility_date": "2026-10-17",
+  // Serves the build and forwards the four public reads under /api to API_ORIGIN, the API's public
+  // URL; worker/public-api.ts holds the allowlist and every other /api path answers 404. API_ORIGIN
+  // is a secret while the API sits behind a quick tunnel whose URL changes on every restart.
+  "main": "./worker/index.ts",
   // Serves https://proofbox.luis-markmann.workers.dev, the redirect, CORS and logout URI of the
   // Production environment in the WorkOS project "proofbox". Preview URLs stay off because each
   // would need its own redirect URI there.
@@ -10,7 +14,9 @@
   "preview_urls": false,
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
   },
   "observability": {
     "enabled": true,

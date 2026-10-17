@@ -1,6 +1,6 @@
 import * as React from "react";
 
-type Theme = "dark" | "light" | "system";
+export type Theme = "dark" | "light" | "system";
 type ResolvedTheme = "dark" | "light";
 
 type ThemeProviderProps = {
@@ -40,7 +40,7 @@ function disableTransitionsTemporarily() {
   const style = document.createElement("style");
   style.appendChild(
     document.createTextNode(
-      "*,*::before,*::after{-webkit-transition:none!important;transition:none!important}",
+      "*:not(.thumb),*::before,*::after{-webkit-transition:none!important;transition:none!important}",
     ),
   );
   document.head.appendChild(style);
