@@ -193,6 +193,13 @@ function Summary({
             <span className="sr-only">Asking Cosmos about this clip</span>
           </div>
         )}
+        {summary.tag === "pending" && (
+          <div className="flex flex-col gap-3" aria-busy="true">
+            <p className="text-sm text-muted-foreground">Cosmos is still describing this pack.</p>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        )}
         {summary.tag === "failed" && (
           <p className="text-sm text-muted-foreground">
             The summary is not available right now. The video and checklist above are the record.
@@ -200,9 +207,9 @@ function Summary({
         )}
         {summary.tag === "ready" && (
           <div className="flex flex-col gap-3">
-            <p className="text-sm leading-relaxed text-pretty">{summary.answer.answer}</p>
+            <p className="text-sm leading-relaxed text-pretty">{summary.summary.text}</p>
             <div className="flex flex-wrap gap-1.5">
-              {summary.answer.evidence
+              {summary.summary.evidence
                 .filter((clip) => clip.pack_id === packId && clip.start_s !== null)
                 .map((clip) => (
                   <button

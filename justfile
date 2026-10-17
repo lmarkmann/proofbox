@@ -25,6 +25,10 @@ deploy-api:
     ssh {{vm}} 'bash -lc "fuser -k 8000/tcp; cd ~/proofbox-api/apps/api && ~/.local/bin/uv sync --frozen -q; PYTHONWARNINGS=\"ignore:Unverified HTTPS request\" nohup .venv/bin/uvicorn proofbox_api:app --host 127.0.0.1 --port 8000 > ~/proofbox-api.log 2>&1 < /dev/null &" > /dev/null 2>&1 < /dev/null' < /dev/null
     ssh {{vm}} 'for i in $(seq 30); do curl -sf 127.0.0.1:8000/health && exit; sleep 2; done; tail -20 ~/proofbox-api.log; exit 1' < /dev/null
 
+# serve the dev server on :5173 at a public *.trycloudflare.com URL, for scanning labels when the Worker cannot reach the API
+tunnel:
+    cloudflared tunnel --no-autoupdate --url http://localhost:5173
+
 # version drift, then format, lint, typecheck and test every app
 check:
     pnpm run --silent version:check

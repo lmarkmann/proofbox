@@ -3,6 +3,7 @@ dist
 *.local
 *.log
 .vite/
+.wrangler/
 vite.config.ts.timestamp-*
 
 .env

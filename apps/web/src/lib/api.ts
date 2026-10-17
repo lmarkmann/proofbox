@@ -31,6 +31,12 @@ export type Evidence = {
   text: string;
 };
 export type Answer = { answer: string; evidence: Evidence[] };
+/** What Cosmos saw in a sealed pack's clip, computed once at seal. */
+export type CosmosSummary = {
+  pack_id: string;
+  text: string;
+  evidence: Omit<Evidence, "order_id">[];
+};
 
 /** status 0 means the request never reached the API */
 export class ApiError extends Error {
@@ -92,6 +98,10 @@ export function sealPack(packId: string, video: Blob, track: TrackPoint[]) {
 
 export const getTrack = (packId: string) =>
   call<TrackPoint[]>(`/packs/${encodeURIComponent(packId)}/track`);
+
+/** 404 until Cosmos has described the clip */
+export const getSummary = (packId: string, signal?: AbortSignal) =>
+  call<CosmosSummary>(`/packs/${encodeURIComponent(packId)}/summary`, { signal });
 
 export const packVideoUrl = (packId: string) => `/api/packs/${encodeURIComponent(packId)}/video`;
 
