@@ -71,6 +71,9 @@ const json = (value: unknown): RequestInit => ({
 
 export const listOrders = () => call<Order[]>("/orders");
 
+/** Keeps an order that already exists, so a reprint never rewrites what was packed */
+export const registerOrder = (order: Order) => call<Order>("/orders", json(order));
+
 export type RecentPack = PackSummary & { order_id: string };
 
 /** Newest first, so the station history survives a reload. */

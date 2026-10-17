@@ -9,7 +9,7 @@ import vastdb
 from ibis import _
 from vastdb.table import ITable
 
-from proofbox_api.packing import Check, Order, Pack, TrackPoint
+from proofbox_api.packing import Check, Item, Order, Pack, TrackPoint
 
 SCHEMA = "proofbox"
 
@@ -141,6 +141,25 @@ class Store:
     def order(self, order_id: str) -> Order | None:
         rows = self.select("orders", _.order_id == order_id)
         return order_from_row(rows[0]) if rows else None
+
+    def set_items(self, order_id: str, items: list[Item]) -> None:
+        with self.table("orders") as table:
+            found = table.select(
+                columns=["order_id"],
+                predicate=_.order_id == order_id,
+                internal_row_id=True,
+            ).read_all()
+            encoded = json.dumps([item.model_dump() for item in items])
+            table.update(
+                pa.table(
+                    {
+                        "$row_id": found["$row_id"],
+                        "items": pa.array(
+                            [encoded] * found.num_rows, pa.utf8()
+                        ),
+                    }
+                )
+            )
 
     def packs(self, order_id: str) -> list[Pack]:
         rows = self.select("packs", _.order_id == order_id)

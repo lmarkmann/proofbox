@@ -44,11 +44,15 @@ export type ChecklistRow = {
   status: "missing" | "partial" | "done" | "extra";
 };
 
-/** Counts distinct tracks per label against the order; labels the order lacks come last as extras. */
+/**
+ * Counts distinct tracks per label against the order; labels the order lacks come last as extras.
+ * An order without items expects nothing, so everything tracked counts as packed.
+ */
 export function reconcile(
   items: OrderItem[],
   tracksByLabel: ReadonlyMap<string, ReadonlySet<number>>,
 ): ChecklistRow[] {
+  const open = items.length === 0;
   const expected = new Set(items.map((item) => item.name));
   const rows: ChecklistRow[] = items.map(({ name, qty }) => {
     const seen = tracksByLabel.get(name)?.size ?? 0;
@@ -61,7 +65,11 @@ export function reconcile(
   });
   for (const [name, tracks] of tracksByLabel) {
     if (!expected.has(name) && tracks.size > 0)
-      rows.push({ name, qty: 0, seen: tracks.size, status: "extra" });
+      rows.push(
+        open
+          ? { name, qty: tracks.size, seen: tracks.size, status: "done" }
+          : { name, qty: 0, seen: tracks.size, status: "extra" },
+      );
   }
   return rows;
 }

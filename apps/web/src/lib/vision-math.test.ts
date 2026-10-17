@@ -55,4 +55,9 @@ describe("reconcile", () => {
       ["banana", 1, "extra"],
     ]);
   });
+
+  test("an order without items takes everything tracked as packed", () => {
+    const rows = reconcile([], new Map([["computer mouse", new Set([3, 5])]]));
+    expect(rows).toEqual([{ name: "computer mouse", qty: 2, seen: 2, status: "done" }]);
+  });
 });
