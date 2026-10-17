@@ -48,7 +48,7 @@ id = "ruff-format"
 name = "ruff format"
 language = "system"
 entry = "uv run --project apps/api --locked ruff format"
-files = "^apps/api/"
+files = "^apps/(api|printer)/"
 types = ["python"]
 priority = "format"
 
@@ -57,7 +57,7 @@ id = "ruff-check"
 name = "ruff check"
 language = "system"
 entry = "uv run --project apps/api --locked ruff check --fix"
-files = "^apps/api/"
+files = "^apps/(api|printer)/"
 types = ["python"]
 priority = "lint"
 

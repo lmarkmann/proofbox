@@ -59,6 +59,21 @@ jobs:
       - name: api test
         working-directory: apps/api
         run: uv run --locked pytest -q
+      - name: printer sync
+        working-directory: apps/printer
+        run: uv sync --locked
+      - name: printer format
+        working-directory: apps/printer
+        run: uv run --locked ruff format --check
+      - name: printer lint
+        working-directory: apps/printer
+        run: uv run --locked ruff check --output-format=github
+      - name: printer types
+        working-directory: apps/printer
+        run: uv run --locked pyrefly check --output-format=full-text-with-github
+      - name: printer test
+        working-directory: apps/printer
+        run: uv run --locked pytest -q
       - name: workflows
         env:
           GH_TOKEN: ${{ github.token }}

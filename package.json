@@ -5,7 +5,7 @@
   "scripts": {
     "ready": "vp check && vp run -r build",
     "dev": "vp run web#dev",
-    "release:version": "changeset version && node scripts/sync-version.mjs && uv lock --project apps/api",
+    "release:version": "changeset version && node scripts/sync-version.mjs && uv lock --project apps/api && uv lock --project apps/printer",
     "version:check": "node scripts/sync-version.mjs --check"
   },
   "devDependencies": {
