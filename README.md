@@ -8,6 +8,8 @@ Per-item packing proof for B2B fulfilment. Built at Real-Time Video Agents Hack 
 - `apps/api`: FastAPI service on Python 3.14, managed by uv
 - `apps/printer`: local agent that renders box labels and prints them on a USB JADENS JD-268BT thermal printer
 - `docs/assets`: logo SVGs and `build_logo.py`, which generates them
+- `docs/vast`: the VAST Builders Challenge guides and reference, copied from the organizers' repo
+- `.claude/skills`: the organizers' agent skills for the stack (search, ingest, VastDB, GPU models), loaded by both Claude Code and Cursor; `.cursor/rules/vast-builders.mdc` (symlinked into `.claude/rules`) holds the ground rules
 
 ## Getting started
 

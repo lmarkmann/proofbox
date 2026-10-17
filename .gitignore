@@ -17,4 +17,8 @@ vite.config.ts.timestamp-*
 
 __pycache__/
 
-.claude/worktrees/
+# .claude/ is ignored globally; track only the shared agent skills and rules
+!.claude/
+.claude/*
+!.claude/skills/
+!.claude/rules/

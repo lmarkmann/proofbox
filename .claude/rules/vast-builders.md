@@ -1,0 +1,1 @@
+../../.cursor/rules/vast-builders.mdc

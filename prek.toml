@@ -11,11 +11,10 @@ hooks = [
   { id = "check-added-large-files" },
   { id = "check-case-conflict" },
   { id = "detect-private-key" },
-  { id = "end-of-file-fixer", priority = "format" },
-  { id = "trailing-whitespace", priority = "format" },
-  { id = "check-yaml", args = [
-    "--allow-multiple-documents",
-  ] },
+  # Copied from the VAST organizers repo: keep byte-identical so re-copies diff cleanly
+  { id = "end-of-file-fixer", priority = "format", exclude = '^(\.claude/skills|docs/vast)/' },
+  { id = "trailing-whitespace", priority = "format", exclude = '^(\.claude/skills|docs/vast)/' },
+  { id = "check-yaml", args = ["--allow-multiple-documents"] },
   { id = "check-toml" },
   { id = "check-json", exclude = "tsconfig.*\\.json$" },
 ]
