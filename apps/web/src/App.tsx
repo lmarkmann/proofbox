@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useAuth } from "@workos-inc/authkit-react";
+import { useEffect, useState } from "react";
 
 import { CameraPanel } from "@/components/camera-panel";
 import { LabelPanel } from "@/components/label-panel";
+import { SignInScreen } from "@/components/sign-in-screen";
 import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useHealth } from "@/hooks/use-health";
@@ -9,6 +11,21 @@ import { useHealth } from "@/hooks/use-health";
 type PrintedLabel = { orderId: string; at: Date };
 
 export function App() {
+  const { isLoading, user, signIn } = useAuth();
+
+  // WorkOS sends dashboard impersonation and other externally started logins to /login
+  useEffect(() => {
+    if (window.location.pathname === "/login") void signIn();
+  }, [signIn]);
+
+  if (isLoading) return null;
+
+  if (!user) return <SignInScreen onSignIn={() => signIn()} />;
+
+  return <PackingStation />;
+}
+
+function PackingStation() {
   const api = useHealth("/api/health");
   const printer = useHealth("/printer/health");
   const [printed, setPrinted] = useState<PrintedLabel[]>([]);

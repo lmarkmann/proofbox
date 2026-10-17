@@ -1,4 +1,5 @@
-import { MoonIcon, SunIcon } from "lucide-react";
+import { useAuth } from "@workos-inc/authkit-react";
+import { LogOutIcon, MoonIcon, SunIcon } from "lucide-react";
 
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ function StatusPill({ label, value, tone }: { label: string; value: string; tone
 
 export function SiteHeader({ api, printer }: { api: Health | null; printer: Health | null }) {
   const { theme, setTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const dark =
     theme === "dark" ||
     (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -55,6 +57,14 @@ export function SiteHeader({ api, printer }: { api: Health | null; printer: Heal
             onClick={() => setTheme(dark ? "light" : "dark")}
           >
             {dark ? <SunIcon /> : <MoonIcon />}
+          </Button>
+          {user && (
+            <span className="hidden max-w-48 truncate text-xs text-muted-foreground md:inline">
+              {user.email}
+            </span>
+          )}
+          <Button variant="ghost" size="icon" aria-label="Sign out" onClick={() => signOut()}>
+            <LogOutIcon />
           </Button>
         </div>
       </div>

@@ -24,6 +24,18 @@ just logo    # regenerate the logo into docs/assets and apps/web/public
 
 Add UI components from `apps/web` with `pnpm dlx shadcn@latest add <component>`.
 
+## Sign-in and deploy
+
+The web app signs users in with WorkOS AuthKit (project `proofbox`) before it shows anything. `localhost:5173` uses the Staging environment and the deployed app uses Production, so accounts made in one do not exist in the other. Neither needs an API key: the client IDs in `apps/web/src/main.tsx` are public. The four contributors at the bottom of this file have accounts in both environments: sign in with your email and the code WorkOS sends, or with Google, Microsoft, GitHub or Apple.
+
+The app deploys as the Cloudflare Worker `proofbox`, static assets only, at <https://proofbox.luis-markmann.workers.dev>:
+
+```sh
+vp run web#deploy   # build, then wrangler deploy (needs wrangler login on Luis's Cloudflare account)
+```
+
+A new origin (custom domain, another port) has to be added to the matching WorkOS environment as a redirect URI, CORS origin and logout URI, or sign-in fails. The API and printer agent are not deployed, so on the Worker the header shows both as offline.
+
 ## Label printer
 
 The printer agent runs on the machine the printer is plugged into, separate from the API, so the API can live anywhere. It talks raw TSPL over USB through libusb, with no driver or CUPS queue. Load 4x6 in fanfold labels and hold the feed button until one beep so the printer measures them.
