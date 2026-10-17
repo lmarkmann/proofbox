@@ -1,5 +1,15 @@
 # web
 
+## 0.3.0
+
+### Minor Changes
+
+- ac1811c: Packing station dashboard: live camera, API and printer status, label preview and printing.
+
+### Patch Changes
+
+- 9c37a34: Labels print on one sticker without feeding a blank second label.
+
 ## 0.2.0
 
 ### Minor Changes
