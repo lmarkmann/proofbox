@@ -5,6 +5,7 @@ import { type Account, UserMenu } from "@/components/app-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { CameraPanel } from "@/components/camera-panel";
 import { type Preview, PreviewFrame, type PrintJob, PrintFeedback } from "@/components/label-panel";
+import { NotFoundPage } from "@/components/not-found-page";
 import { OfflineBanner, PackingStation } from "@/components/packing-station";
 import { PackHud } from "@/components/pack-panel";
 import { PanelBoundary } from "@/components/panel-boundary";
@@ -431,6 +432,18 @@ export default function StateGallery() {
             <Cell name="auth loading splash">
               <div className="h-48 overflow-hidden rounded-xl ring-1 ring-foreground/10 [&>main]:min-h-full">
                 <AuthSplash />
+              </div>
+            </Cell>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Cell name="404, plain dead link">
+              <div className="h-[44rem] overflow-hidden rounded-xl ring-1 ring-foreground/10 [&>div]:min-h-full">
+                <NotFoundPage pathname="/settings/billing" />
+              </div>
+            </Cell>
+            <Cell name="404, path carries an order number">
+              <div className="h-[44rem] overflow-hidden rounded-xl ring-1 ring-foreground/10 [&>div]:min-h-full">
+                <NotFoundPage pathname="/proofs/pb1001" />
               </div>
             </Cell>
           </div>
