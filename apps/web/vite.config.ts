@@ -16,6 +16,10 @@ export default defineConfig({
         target: "http://127.0.0.1:8000",
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
+      "/printer": {
+        target: "http://127.0.0.1:8001",
+        rewrite: (path) => path.replace(/^\/printer/, ""),
+      },
     },
   },
 });
