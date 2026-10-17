@@ -72,13 +72,55 @@ A new origin (custom domain, another port) has to be added to the matching WorkO
 
 ## Deploy
 
-Every push to `main` deploys the web app as the Cloudflare Worker `proofbox`, static assets only, at <https://proofbox.luis-markmann.workers.dev>: the `deploy` job in `.github/workflows/ci.yml` runs after the `linux` checks pass, in the GitHub environment `production`, with a Workers-scoped Cloudflare token in its `CLOUDFLARE_API_TOKEN` secret. To deploy by hand from a machine logged in with `wrangler login`:
+Every push to `main` deploys the web app as the Cloudflare Worker `proofbox` at <https://proofbox.luis-markmann.workers.dev>: the `deploy` job in `.github/workflows/ci.yml` runs after the `linux` checks pass, in the GitHub environment `production`, with a Workers-scoped Cloudflare token in its `CLOUDFLARE_API_TOKEN` secret. To deploy by hand from a machine logged in with `wrangler login`:
 
 ```sh
 vp run web#deploy   # build, then wrangler deploy
 ```
 
-Only the web app is deployed. The API and printer agent run locally, so on the Worker the header shows both as offline.
+Only the web app is deployed. The API runs on the lab VM and the printer agent next to the printer, so on the Worker the header shows both as offline.
+
+## Public proof links
+
+A label's QR code opens `https://proofbox.luis-markmann.workers.dev/proof/<order>` on any phone, on mobile data. `/proof` is public and sits ahead of the WorkOS gate, so the person scanning needs no account.
+
+The station runs on `localhost`, so tell its build where the QR codes should point:
+
+```sh
+cp apps/web/.env.example apps/web/.env.local   # VITE_PROOF_ORIGIN=https://proofbox.luis-markmann.workers.dev
+```
+
+Unset, labels point at the station's own origin, which no phone can reach.
+
+The Worker serves the build and forwards four reads under `/api` to `API_ORIGIN`, the API's public URL, with the `Range` header passed through so the video seeks:
+
+| Worker path                   | API path                  |
+| ----------------------------- | ------------------------- |
+| `GET /api/orders/{id}`        | `GET /orders/{id}`        |
+| `GET /api/packs/{id}/video`   | `GET /packs/{id}/video`   |
+| `GET /api/packs/{id}/track`   | `GET /packs/{id}/track`   |
+| `GET /api/packs/{id}/summary` | `GET /packs/{id}/summary` |
+
+Every other `/api` request gets a 404 from the Worker, so the public surface is read-only. Writes (opening and sealing packs, `/ask`, `/transcribe`) stay on the station, which reaches the API through the Vite dev proxy and `ssh -N -L 8000:127.0.0.1:8000 bc-luiscamranmarkmann`. `apps/web/worker/public-api.ts` holds the allowlist.
+
+The API reaches Cloudflare through an outbound `cloudflared` tunnel from the VM, no sudo needed. Until a named tunnel exists it is a quick tunnel, whose `*.trycloudflare.com` URL changes on every restart:
+
+```sh
+# on the VM: start it and read the URL it was given
+nohup ~/bin/cloudflared tunnel --no-autoupdate --url http://localhost:8000 > ~/proofbox-tunnel.log 2>&1 < /dev/null &
+echo $! > ~/proofbox-tunnel.pid
+grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' ~/proofbox-tunnel.log | head -1
+
+# on the laptop: point the deployed Worker at it (a secret, so CI deploys keep it)
+pnpm --dir apps/web exec wrangler secret put API_ORIGIN
+
+# or try the Worker locally against it
+pnpm --dir apps/web exec wrangler dev --port 8790 --var API_ORIGIN:https://<name>.trycloudflare.com
+```
+
+Until `API_ORIGIN` is set, the four reads answer 503 and the proof page says the API is unreachable. A quick tunnel exposes the whole API at an unguessable URL, writes included; the Worker's allowlist does not protect that URL.
+
+If the VM cannot open a tunnel, `just tunnel` serves the local dev server on :5173 at a `*.trycloudflare.com` URL instead. Put that URL in `VITE_PROOF_ORIGIN` in `apps/web/.env.local` (Vite restarts on the change) and the labels open the proof page through the station's own proxy. That URL also exposes the station, so stop the tunnel after the demo.
 
 ## Label printer
 

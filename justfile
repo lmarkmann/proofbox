@@ -15,6 +15,10 @@ dev:
     (cd apps/vision && uv run proofbox-vision) &
     pnpm dev
 
+# serve the dev server on :5173 at a public *.trycloudflare.com URL, for scanning labels when the Worker cannot reach the API
+tunnel:
+    cloudflared tunnel --no-autoupdate --url http://localhost:5173
+
 # version drift, then format, lint, typecheck and test every app
 check:
     pnpm run --silent version:check

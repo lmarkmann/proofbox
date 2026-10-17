@@ -11,6 +11,8 @@ export default defineConfig({
     },
   },
   server: {
+    // `just tunnel` serves this dev server on a random *.trycloudflare.com host
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8000",
