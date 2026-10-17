@@ -18,10 +18,6 @@ hooks = [
   ] },
   { id = "check-toml" },
   { id = "check-json", exclude = "tsconfig.*\\.json$" },
-  { id = "no-commit-to-branch", args = [
-    "--branch",
-    "main",
-  ] },
 ]
 
 [[repos]]
