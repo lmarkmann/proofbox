@@ -9,7 +9,7 @@ import vastdb
 from ibis import _
 from vastdb.table import ITable
 
-from proofbox_api.packing import Order, Pack, TrackPoint
+from proofbox_api.packing import Check, Order, Pack, TrackPoint
 
 SCHEMA = "proofbox"
 
@@ -36,6 +36,14 @@ TABLES = {
     "summaries": pa.schema(
         [
             ("pack_id", pa.utf8()),
+            ("text", pa.utf8()),
+            ("created_at", pa.timestamp("us")),
+        ]
+    ),
+    "checks": pa.schema(
+        [
+            ("pack_id", pa.utf8()),
+            ("verdict", pa.utf8()),
             ("text", pa.utf8()),
             ("created_at", pa.timestamp("us")),
         ]
@@ -200,6 +208,22 @@ class Store:
             max(rows, key=lambda row: row["created_at"])["text"]
             if rows
             else None
+        )
+
+    def insert_check(self, check: Check) -> None:
+        row = check.model_dump() | {
+            "created_at": datetime.now(UTC).replace(tzinfo=None)
+        }
+        with self.table("checks") as table:
+            table.insert(pa.Table.from_pylist([row], TABLES["checks"]))
+
+    def check(self, pack_id: str) -> Check | None:
+        rows = self.select("checks", _.pack_id == pack_id)
+        if not rows:
+            return None
+        latest = max(rows, key=lambda row: row["created_at"])
+        return Check(
+            pack_id=pack_id, verdict=latest["verdict"], text=latest["text"]
         )
 
     def track(self, pack_id: str) -> list[TrackPoint]:

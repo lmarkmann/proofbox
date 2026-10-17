@@ -24,6 +24,7 @@ from proofbox_api.ask import (
     ToolFailed,
     ToolReturned,
 )
+from proofbox_api.packing import Check
 from proofbox_api.stream import FAILED, ui_message_stream
 
 EVIDENCE = Evidence(
@@ -212,3 +213,18 @@ def test_chat_streams_the_protocol_with_its_header(
     assert "data-evidence" in types
     assert "text-delta" in types
     assert types[-1] == "finish"
+
+
+def test_check_is_404_until_stored(client: tuple[TestClient, FakeStore]):
+    test_client, store = client
+    url = f"/packs/{PACK.pack_id}/check"
+
+    assert test_client.get(url).status_code == 404
+    store.insert_check(
+        Check(pack_id=PACK.pack_id, verdict="short", text="No scissors.")
+    )
+    assert test_client.get(url).json() == {
+        "pack_id": PACK.pack_id,
+        "verdict": "short",
+        "text": "No scissors.",
+    }

@@ -7,7 +7,7 @@ import httpx2
 from openai import AsyncOpenAI
 
 from proofbox_api.cosmos import Cosmos
-from proofbox_api.packing import Item, Order, Pack, TrackPoint
+from proofbox_api.packing import Check, Item, Order, Pack, TrackPoint
 from proofbox_api.store import Store
 from proofbox_api.vss import VSS
 
@@ -38,9 +38,16 @@ TRACK = [
 class FakeStore(Store):
     def __init__(self):
         self.summaries: dict[str, str] = {}
+        self.checks: dict[str, Check] = {}
 
     def insert_summary(self, pack_id: str, text: str) -> None:
         self.summaries[pack_id] = text
+
+    def insert_check(self, check: Check) -> None:
+        self.checks[check.pack_id] = check
+
+    def check(self, pack_id: str) -> Check | None:
+        return self.checks.get(pack_id)
 
     def order(self, order_id: str) -> Order | None:
         return ORDER if order_id == ORDER.order_id else None

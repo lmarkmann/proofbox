@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from pydantic import BaseModel
 
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import (
+    Check,
     Pack,
     PackSummary,
     TrackPoint,
@@ -81,6 +83,14 @@ SYSTEM_PROMPT = """You answer questions about orders packed at the ProofBox stat
 Ground every claim in tool results: getOrder for expected items and the detector counts and verdict of each sealed pack, watchPack to have Cosmos look at a pack's clip, searchArchive for the video archive.
 For what went into a box or whether anything is missing, start with getOrder, then watchPack on its latest pack, and compare what was seen with the order's item lines; the detector counts can miss items, the clip is the stronger evidence.
 Answer in two to four sentences: end with a verdict of complete, short (name what is missing) or unexpected (name what is extra), and name the pack ids you relied on."""
+
+CHECK_PROMPT = """Check pack {pack_id}: have Cosmos watch its clip and compare what it sees with the order's item lines.
+Reply with the verdict alone on the first line, one of complete, short or unexpected, then one or two sentences naming what is missing or extra."""
+
+VERDICT_LINE = re.compile(
+    r"^\W*(?:verdict\W*)?(complete|short|unexpected)\b\W*(.*)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 class Evidence(BaseModel):
@@ -446,3 +456,36 @@ async def summarize_pack(tools: Toolbox, pack_id: str) -> None:
     await asyncio.to_thread(
         tools.store.insert_summary, pack_id, content["seen"]
     )
+
+
+def parse_check(pack_id: str, reply: str) -> Check:
+    found = VERDICT_LINE.match(reply.strip())
+    if found is None:
+        raise ValueError(f"no verdict in the check reply for pack {pack_id}")
+    return Check.model_validate(
+        {
+            "pack_id": pack_id,
+            "verdict": found[1].lower(),
+            "text": found[2].strip(),
+        }
+    )
+
+
+async def check_pack(
+    llm: AsyncOpenAI, model: str, tools: Toolbox, pack_id: str
+) -> None:
+    try:
+        pack = await asyncio.to_thread(tools.store.pack, pack_id)
+        if pack is None:
+            raise LookupError(f"no sealed pack {pack_id}")
+        answer = await ask(
+            llm,
+            model,
+            tools,
+            CHECK_PROMPT.format(pack_id=pack_id),
+            pack.order_id,
+        )
+        check = parse_check(pack_id, answer.answer)
+        await asyncio.to_thread(tools.store.insert_check, check)
+    except Exception:
+        logger.exception("no check for pack %s", pack_id)

@@ -33,12 +33,14 @@ from proofbox_api.ask import (
     Evidence,
     Toolbox,
     ask,
+    check_pack,
     converse,
     span_evidence,
     summarize_pack,
 )
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import (
+    Check,
     Order,
     Pack,
     PackSummary,
@@ -289,6 +291,7 @@ async def seal_pack(
     )
     await asyncio.to_thread(svc.store.insert_pack, sealed, points)
     background.add_task(summarize_pack, svc.tools, pack_id)
+    background.add_task(check_pack, svc.llm, svc.model, svc.tools, pack_id)
     return Sealed(
         pack_id=pack_id,
         order_id=order.order_id,
@@ -325,6 +328,14 @@ def pack_summary(svc: Svc, pack_id: PackId) -> Summary:
         text=text,
         evidence=span_evidence(pack, svc.store.track(pack_id)),
     )
+
+
+@app.get("/packs/{pack_id}/check")
+def pack_check(svc: Svc, pack_id: PackId) -> Check:
+    check = svc.store.check(pack_id)
+    if check is None:
+        raise HTTPException(404, f"no check yet for pack {pack_id}")
+    return check
 
 
 @app.post("/ask")

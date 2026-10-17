@@ -2,6 +2,7 @@ import asyncio
 import json
 from pathlib import Path
 
+import pytest
 from fakes import (
     MODEL,
     PACK,
@@ -28,7 +29,9 @@ from proofbox_api.ask import (
     ToolFailed,
     ToolReturned,
     ask,
+    check_pack,
     converse,
+    parse_check,
     summarize_pack,
 )
 
@@ -240,3 +243,70 @@ def test_summary_stores_what_cosmos_saw_and_skips_unknown_packs(tmp_path: Path):
     }
     assert isinstance(tools.cosmos, FakeCosmos)
     assert "Describe exactly what was packed" in tools.cosmos.prompts[0]
+
+
+@pytest.mark.parametrize(
+    ("reply", "verdict", "text"),
+    [
+        (
+            "short\nThe scissors are missing.",
+            "short",
+            "The scissors are missing.",
+        ),
+        ("**Unexpected** A pen was packed.", "unexpected", "A pen was packed."),
+        (
+            "Verdict: complete\nEverything is there.",
+            "complete",
+            "Everything is there.",
+        ),
+    ],
+)
+def test_parses_the_verdict_from_the_first_line(
+    reply: str, verdict: str, text: str
+):
+    check = parse_check(PACK.pack_id, reply)
+    assert (check.verdict, check.text) == (verdict, text)
+
+
+def run_check(replies: list[dict], tools: Toolbox) -> list[dict]:
+    llm, requests = fake_llm(replies)
+
+    async def go() -> None:
+        async with llm:
+            await check_pack(llm, MODEL, tools, PACK.pack_id)
+
+    asyncio.run(go())
+    return requests
+
+
+def test_check_stores_the_agent_verdict(tmp_path: Path):
+    tools = toolbox(tmp_path)
+    requests = run_check(
+        [
+            {
+                "content": None,
+                "tool_calls": [
+                    tool_call(
+                        "c1",
+                        "watchPack",
+                        {"pack_id": PACK.pack_id, "question": "What went in?"},
+                    )
+                ],
+            },
+            {"content": "short\nNo scissors were packed."},
+        ],
+        tools,
+    )
+
+    assert isinstance(tools.store, FakeStore)
+    assert tools.store.checks[PACK.pack_id].verdict == "short"
+    assert tools.store.checks[PACK.pack_id].text == "No scissors were packed."
+    assert PACK.pack_id in requests[0]["messages"][-1]["content"]
+
+
+def test_check_stores_nothing_when_the_reply_has_no_verdict(tmp_path: Path):
+    tools = toolbox(tmp_path)
+    run_check([{"content": "I am not sure."}], tools)
+
+    assert isinstance(tools.store, FakeStore)
+    assert tools.store.checks == {}
