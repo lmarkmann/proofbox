@@ -101,7 +101,7 @@ The Worker serves the build and forwards four reads under `/api` to `API_ORIGIN`
 | `GET /api/packs/{id}/track`   | `GET /packs/{id}/track`   |
 | `GET /api/packs/{id}/summary` | `GET /packs/{id}/summary` |
 
-Every other `/api` request gets a 404 from the Worker, so the public surface is read-only. Writes (opening and sealing packs, `/ask`, `/transcribe`) stay on the station, which reaches the API through the Vite dev proxy and `ssh -N -L 8000:127.0.0.1:8000 bc-luiscamranmarkmann`. `apps/web/worker/public-api.ts` holds the allowlist.
+Every other `/api` request gets a 404 from the Worker, so the public surface is read-only. Writes (opening and sealing packs, `/ask`, `/transcribe`) stay on the station, which reaches the API through the Vite dev proxy and the SSH tunnel that `just dev` opens. `apps/web/worker/public-api.ts` holds the allowlist.
 
 The API reaches Cloudflare through an outbound `cloudflared` tunnel from the VM, no sudo needed. Until a named tunnel exists it is a quick tunnel, whose `*.trycloudflare.com` URL changes on every restart:
 
