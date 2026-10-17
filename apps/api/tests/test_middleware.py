@@ -1,4 +1,5 @@
 import json
+from contextlib import asynccontextmanager
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -47,6 +48,24 @@ def test_vast_operations_use_transactions_and_explicit_schema():
     assert store.get("value") == row
     table.__getitem__.assert_called_once_with("id")
     assert session.transaction.return_value.__exit__.call_count == 3
+
+
+def test_install_preserves_existing_application_lifespan():
+    events = []
+
+    @asynccontextmanager
+    async def existing_lifespan(app):
+        events.append("started")
+        app.state.packing_service = "available"
+        yield
+        events.append("closed")
+
+    app = FastAPI(lifespan=existing_lifespan)
+    install(app, Settings(), Store())
+    with TestClient(app):
+        assert app.state.packing_service == "available"
+        assert events == ["started"]
+    assert events == ["started", "closed"]
 
 
 class Store:

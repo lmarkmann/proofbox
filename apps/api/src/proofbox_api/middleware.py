@@ -188,6 +188,7 @@ def install(
 ):
     settings = settings or Settings()
     store = store or VastAuditStore(settings)
+    existing_lifespan = app.router.lifespan_context
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -204,7 +205,8 @@ def install(
                 LOG.warning(
                     "VAST initialization unavailable; readiness remains false"
                 )
-            yield
+            async with existing_lifespan(app):
+                yield
 
     app.router.lifespan_context = lifespan
     router = APIRouter()

@@ -1,5 +1,34 @@
 # ProofBox middleware
 
+## Current merged application
+
+The app now includes the team's VSS packing workflow (`/orders`, `/packs`,
+`/packs/{id}/seal`, `/ask`) alongside the custom middleware described below.
+Both startup lifespans are preserved. The packing workflow loads `/config/*.config`
+on the workshop VM and needs the VSS login, GPU bearer token, VAST, and W&B settings
+defined in `settings.py`. The custom ngrok adapter is a separate integration;
+the VSS workflow does not require that service.
+
+For an opt-in live test, use an isolated checkout on the VM, Python 3.14, and run:
+
+```sh
+uv sync --project apps/api --python 3.14
+uv run --project apps/api python scripts/live_integration.py --confirm-private-upload
+```
+
+Only run after approving the private synthetic fixture upload. This creates a
+timestamped `proofbox_integration_*` schema in the assigned team bucket, uploads
+the synthetic clip, and tests the application routes with real dependencies.
+It writes `integration-result.json` in that checkout. It does not test browser
+sign-in, a physical camera/printer, or the deployed Worker. Fixture track points
+are synthetic; their counts are not evidence of actual detector accuracy.
+No credentials are written to the report. Test schemas and private uploads are
+retained for inspection; the runner does not delete them automatically.
+
+The sections below document the original custom middleware contract. Frontend
+handoff items reflect the initial stub and should be checked against the newer
+packing/proof UI before planning more work.
+
 Implements `POST /api/process-session` (multipart `file`) and
 `POST /api/audit/evaluate-claim` (`upload_id`, `customer_dispute_text`).
 The same routes without `/api` support the existing Vite proxy.
