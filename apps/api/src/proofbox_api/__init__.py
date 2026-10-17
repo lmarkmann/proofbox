@@ -43,6 +43,7 @@ from proofbox_api.ask import (
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import (
     Check,
+    Item,
     Order,
     Pack,
     PackSummary,
@@ -202,6 +203,13 @@ def list_orders(svc: Svc) -> list[Order]:
     return svc.store.orders()
 
 
+@app.post("/orders")
+def register_order(svc: Svc, body: Order) -> Order:
+    """Creates the order a freshly printed label points at; an existing order is kept as it is."""
+    svc.store.seed_orders([body])
+    return svc.store.order(body.order_id) or body
+
+
 @app.get("/orders/{order_id}")
 def get_order(svc: Svc, order_id: str) -> OrderDetail:
     order = svc.store.order(order_id)
@@ -268,6 +276,12 @@ async def seal_pack(
     clip = clip_path.read_bytes()
 
     counts = count_tracks(points)
+    if not order.items and counts:
+        # a label printed without items: what the camera tracked becomes the order
+        order.items = [Item(name=label, qty=n) for label, n in counts.items()]
+        await asyncio.to_thread(
+            svc.store.set_items, order.order_id, order.items
+        )
     expected = ", ".join(f"{item.qty} x {item.name}" for item in order.items)
     object_key = None
     errors = [remux_error] if remux_error else []

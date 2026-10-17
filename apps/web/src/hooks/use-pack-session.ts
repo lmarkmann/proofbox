@@ -24,6 +24,22 @@ export type PackState =
 /** One tracked object's lifetime in the clip, in ms from the recording's start */
 export type Span = { label: string; track: number; from: number; to: number };
 
+// what YOLOE looks for when a label was printed without items
+const OPEN_ORDER_VOCABULARY = [
+  "computer mouse",
+  "phone",
+  "cable",
+  "charger",
+  "headphones",
+  "keyboard",
+  "book",
+  "bottle",
+  "cup",
+  "pen",
+];
+// Classes.names in apps/vision
+const MAX_CLASSES = 20;
+
 const RECORDING_TYPES = [
   "video/mp4;codecs=avc1",
   "video/mp4",
@@ -104,10 +120,12 @@ export function usePackSession(
       try {
         const [order, orders] = await Promise.all([getOrder(orderId), listOrders()]);
         const vocabulary = [
-          ...new Set(
-            [...order.items, ...orders.flatMap((other) => other.items)].map((item) => item.name),
-          ),
-        ];
+          ...new Set([
+            ...order.items.map((item) => item.name),
+            ...(order.items.length ? [] : OPEN_ORDER_VOCABULARY),
+            ...orders.flatMap((other) => other.items.map((item) => item.name)),
+          ]),
+        ].slice(0, MAX_CLASSES);
         const stream = recordingStream();
         if (!stream) throw new Error("The camera stopped before packing could start.");
         const { pack_id } = await createPack(orderId);

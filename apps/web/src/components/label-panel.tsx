@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PrinterStatus } from "@/hooks/use-probe";
 import { type Address, addressLines, EMPTY_ADDRESS } from "@/lib/address";
+import { registerOrder } from "@/lib/api";
 import { assertNever } from "@/lib/assert-never";
 import {
   type LabelRequest,
@@ -280,6 +281,12 @@ export function LabelPanel({
     }
     setJob({ tag: "printing" });
     try {
+      // no items: the first sealed pack fills them in from what the camera tracked
+      await registerOrder({
+        order_id: label.order_id,
+        customer: address.recipient || "Walk-in",
+        items: [],
+      });
       await printLabel(label);
       const printed = { orderId: label.order_id, at: new Date() };
       onPrinted(printed);
