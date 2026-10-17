@@ -21,3 +21,6 @@ __pycache__/
 !.claude/
 .claude/worktrees/
 .claude/settings.local.json
+
+# local demo clips served at /demo/ for ?replay=
+apps/web/public/demo/

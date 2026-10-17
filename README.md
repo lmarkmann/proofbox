@@ -80,6 +80,12 @@ vp run web#deploy   # build, then wrangler deploy
 
 Only the web app is deployed. The API and printer agent run locally, so on the Worker the header shows both as offline.
 
+## Bench camera
+
+An iPhone works as the station's camera through Continuity Camera, with no app on the phone. It needs macOS Ventura or later and iOS 16 or later, both signed in to the same Apple ID, with Wi-Fi and Bluetooth on for both. Lock the phone and mount it stationary in landscape, looking down at the bench. Once you start the camera the phone shows up in the camera picker next to the Stop button, and the station picks it by default whenever it is connected. Your own pick is remembered in this browser. If the phone drops out mid-session the station switches to another camera and the picker shows which one; it switches back to the phone when it reconnects, unless you picked a different camera yourself.
+
+For a demo without a live bench, put a clip in `apps/web/public/demo/` (gitignored) and open the station with `?replay=/demo/<file>.mp4`. It starts playing on load, muted and without controls, and stops on the last frame so a seal at the end of the clip lands like a real pack; add `&loop` to loop it. The panel looks the same as with the camera and the status strip says Replay. Paths outside `/demo/` are ignored.
+
 ## Label printer
 
 The printer agent runs on the machine the printer is plugged into, separate from the API, so the API can live anywhere. It talks raw TSPL over USB through libusb, with no driver or CUPS queue. Load 4x6 in fanfold labels and hold the feed button until one beep so the printer measures them.

@@ -10,7 +10,7 @@ import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
 import { AuthSplash } from "@/App";
 import { demoOrder, demoPoints, demoSummary, demoVideoUrl } from "@/debug/pack-demo";
-import type { CameraFailure, CameraState } from "@/hooks/use-camera";
+import type { CameraDevice, CameraFailure, CameraState } from "@/hooks/use-camera";
 import type { PrinterStatus } from "@/hooks/use-probe";
 import type { PrinterFailure } from "@/lib/printer";
 import { ProofView } from "@/proof/proof-page";
@@ -29,6 +29,19 @@ const CAMERA_FAILURES: CameraFailure[] = [
   "disconnected",
   "unknown",
 ];
+const MAC_CAMERA: CameraDevice = { id: "cam-builtin", label: "FaceTime HD Camera" };
+const PHONE_CAMERA: CameraDevice = { id: "cam-iphone", label: "Sam's iPhone Camera" };
+const DESK_VIEW: CameraDevice = { id: "cam-desk", label: "Sam's iPhone Desk View Camera" };
+const USB_CAMERA: CameraDevice = {
+  id: "cam-usb",
+  label: "Logitech BRIO 4K Stream Edition (046d:085e)",
+};
+const REPLAY: CameraState = {
+  tag: "file",
+  url: demoVideoUrl,
+  name: "pack-demo.mp4",
+  loop: false,
+};
 const ACCOUNTS: [string, Account][] = [
   [
     "named, no picture",
@@ -139,7 +152,24 @@ export default function StateGallery() {
   // ?states=station runs the live station without signing in, for driving it from a browser script
   if (new URLSearchParams(window.location.search).get("states") === "station")
     return <PackingStation />;
-  const live: CameraState = { tag: "live", stream: new MediaStream(), resolution: "1280x720" };
+  const liveOn = (deviceId: string, devices: CameraDevice[]): CameraState => ({
+    tag: "live",
+    stream: new MediaStream(),
+    resolution: "1280x720",
+    deviceId,
+    devices,
+  });
+  const live = liveOn(MAC_CAMERA.id, [MAC_CAMERA]);
+  const cameras: [string, CameraState][] = [
+    ["live, one camera", live],
+    [
+      "live, iPhone picked by default",
+      liveOn(PHONE_CAMERA.id, [MAC_CAMERA, PHONE_CAMERA, DESK_VIEW]),
+    ],
+    ["live, iPhone dropped, fell back to the built-in camera", liveOn(MAC_CAMERA.id, [MAC_CAMERA])],
+    ["live, long device label", liveOn(USB_CAMERA.id, [MAC_CAMERA, USB_CAMERA])],
+    ["replay from ?replay=/demo/pack-demo.mp4 (data-source=file)", REPLAY],
+  ];
   const previews: [string, Preview][] = [
     ["waiting", { tag: "waiting" }],
     ["rendering, first", { tag: "rendering", previous: null }],
@@ -224,6 +254,15 @@ export default function StateGallery() {
               lastLabelAt={null}
             />
           </Cell>
+          <Cell name="replaying a clip">
+            <StatusStrip
+              api={{ tag: "up", body: { status: "ok", version: "0.2.0" } }}
+              printer={{ tag: "ready", version: "0.2.0" }}
+              camera={REPLAY}
+              labelCount={12}
+              lastLabelAt={AT}
+            />
+          </Cell>
           <Cell name="printer unplugged, camera asking">
             <StatusStrip
               api={{ tag: "up", body: { status: "ok", version: "0.2.0" } }}
@@ -235,7 +274,7 @@ export default function StateGallery() {
           </Cell>
         </Section>
 
-        <Section title="Bench camera">
+        <Section title="Bench camera (live fixtures have an empty stream, so the video is black)">
           <div className="grid gap-6 md:grid-cols-2">
             <Cell name="off">
               <GalleryCamera camera={{ tag: "off" }} />
@@ -243,12 +282,11 @@ export default function StateGallery() {
             <Cell name="requesting">
               <GalleryCamera camera={{ tag: "requesting" }} />
             </Cell>
-            <Cell name="file">
-              <GalleryCamera camera={{ tag: "file", url: "", name: "bench-demo.mp4" }} />
-            </Cell>
-            <Cell name="live (empty fixture stream, so the video is black)">
-              <GalleryCamera camera={live} />
-            </Cell>
+            {cameras.map(([name, camera]) => (
+              <Cell key={name} name={name}>
+                <GalleryCamera camera={camera} />
+              </Cell>
+            ))}
             {CAMERA_FAILURES.map((failure) => (
               <Cell key={failure} name={`error: ${failure}`}>
                 <GalleryCamera camera={{ tag: "error", failure }} />
