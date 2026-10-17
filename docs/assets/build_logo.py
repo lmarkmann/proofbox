@@ -74,9 +74,7 @@ def fetch_font(path: Path) -> Path:
 
 
 def static_font(variable: Path, weight: int) -> TTFont:
-    font = instantiateVariableFont(
-        TTFont(variable), {"wght": weight, "wdth": 100}
-    )
+    font = instantiateVariableFont(TTFont(variable), {"wght": weight, "wdth": 100})
     removeOverlaps(font)
     buffer = io.BytesIO()
     font.save(buffer)
@@ -218,9 +216,7 @@ def svg(view_box: str, width: float, height: float, body: str) -> str:
     )
 
 
-def build(
-    out_dir: str | Path = "brand", font_path: str | Path | None = None
-) -> None:
+def build(out_dir: str | Path = "brand", font_path: str | Path | None = None) -> None:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     variable = fetch_font(Path(font_path) if font_path else default_font_path())
@@ -228,9 +224,7 @@ def build(
     symbol = mark(static_font(variable, FACE_WEIGHT))
     (out / "proofbox-mark.svg").write_text(svg("0 0 24 24", 240, 240, symbol))
 
-    word, word_width, cap = set_text(
-        static_font(variable, WORD_WEIGHT), "ProofBox"
-    )
+    word, word_width, cap = set_text(static_font(variable, WORD_WEIGHT), "ProofBox")
     k = cap * MARK_TO_CAP / 19.5
     shift = -cap / 2 - 9.75 * k - 3 * k
     text_x = 21 * k + 19.5 * k * GAP_TO_MARK
@@ -244,8 +238,15 @@ def build(
     (out / "proofbox-wordmark.svg").write_text(
         svg(view_box, width * 2, height * 2, body)
     )
+    # the README shows this one on GitHub's dark theme
+    (out / "proofbox-wordmark-white.svg").write_text(
+        svg(view_box, width * 2, height * 2, body.replace(INK, "#FFFFFF"))
+    )
 
-    print(f"wrote {out.resolve()}/proofbox-mark.svg and proofbox-wordmark.svg")
+    print(
+        f"wrote {out.resolve()}/proofbox-mark.svg, proofbox-wordmark.svg"
+        " and proofbox-wordmark-white.svg"
+    )
 
 
 def main() -> None:
