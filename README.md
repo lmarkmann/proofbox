@@ -26,8 +26,6 @@ The packing station films each order, VAST video search finds every item going i
   </a>
 </p>
 
-The demo video goes here.
-
 ## Team
 
 | Name                 | Email                          |
@@ -147,9 +145,3 @@ xh POST :8001/labels/preview order_id=PB-20481 proof_url=https://proofbox.app/p/
 ```
 
 A browser tab that has opened the printer over WebUSB holds it until the tab closes; prints then fail with 409.
-
-## Contributing
-
-`main` is protected: work on a branch, open a PR, squash-merge it. CI (`linux`) runs format, lint, types, tests and a version drift check; on `main` it then deploys.
-
-Every user-facing change gets a changeset: run `pnpm changeset`, pick `web` and the bump, write one sentence, commit it with the code. Merging to `main` opens a "chore: release" PR; merging that tags `vX.Y.Z`. There is one version for the whole repo, so never edit a version by hand.
