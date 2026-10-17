@@ -55,6 +55,7 @@ combine-as-imports = true
 [tool.pyrefly]
 python-version = "3.14"
 project-includes = ["src", "tests"]
+search-path = ["tests"]
 
 [dependency-groups]
 dev = ["httpx2>=2.13.1", "pyrefly>=1.4.0", "pytest>=9.1.1", "ruff>=0.17.1"]

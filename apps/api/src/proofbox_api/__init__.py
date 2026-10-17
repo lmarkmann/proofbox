@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import httpx
 import uvicorn
@@ -22,12 +22,21 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from openai import APIError, AsyncOpenAI
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from openai.types.chat import ChatCompletionMessageParam
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from proofbox_api import canary, settings
-from proofbox_api.ask import Answer, Evidence, Toolbox, ask, summarize_pack
+from proofbox_api.ask import (
+    Answer,
+    Evidence,
+    Toolbox,
+    ask,
+    converse,
+    span_evidence,
+    summarize_pack,
+)
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import (
     Order,
@@ -39,9 +48,9 @@ from proofbox_api.packing import (
     find_clip,
     judge,
     remux,
-    track_spans,
 )
 from proofbox_api.store import Store
+from proofbox_api.stream import HEADERS, ui_message_stream
 from proofbox_api.vss import VSS
 
 
@@ -151,6 +160,25 @@ class Summary(BaseModel):
 
 class Question(BaseModel):
     question: str
+    order_id: str | None = None
+
+
+class UIPart(BaseModel):
+    type: str
+    text: str = ""
+
+
+class UIMessage(BaseModel):
+    id: str
+    role: Literal["system", "user", "assistant"]
+    parts: list[UIPart]
+
+
+class ChatRequest(BaseModel):
+    id: str
+    messages: list[UIMessage]
+    trigger: Literal["submit-message", "regenerate-message"]
+    message_id: str | None = Field(None, alias="messageId")
     order_id: str | None = None
 
 
@@ -292,20 +320,10 @@ def pack_summary(svc: Svc, pack_id: PackId) -> Summary:
     pack = svc.store.pack(pack_id)
     if text is None or pack is None:
         raise HTTPException(404, f"no summary yet for pack {pack_id}")
-    spans = track_spans(svc.store.track(pack_id))
     return Summary(
         pack_id=pack_id,
         text=text,
-        evidence=[
-            Evidence(
-                pack_id=pack_id,
-                order_id=pack.order_id,
-                start_s=first_ms / 1000,
-                end_s=last_ms / 1000,
-                text=f"{label} #{track_id}",
-            )
-            for (label, track_id), (first_ms, last_ms) in spans.items()
-        ],
+        evidence=span_evidence(pack, svc.store.track(pack_id)),
     )
 
 
@@ -317,6 +335,36 @@ async def answer_question(svc: Svc, body: Question) -> Answer:
         )
     except APIError as error:
         raise HTTPException(502, f"W&B Inference: {error}") from error
+
+
+def chat_history(
+    messages: list[UIMessage],
+) -> list[ChatCompletionMessageParam]:
+    history: list[ChatCompletionMessageParam] = []
+    for message in messages:
+        text = "\n\n".join(
+            part.text for part in message.parts if part.type == "text"
+        )
+        if not text:
+            continue
+        if message.role == "user":
+            history.append({"role": "user", "content": text})
+        elif message.role == "assistant":
+            history.append({"role": "assistant", "content": text})
+    return history
+
+
+@app.post("/chat")
+async def chat(svc: Svc, body: ChatRequest) -> StreamingResponse:
+    history = chat_history(body.messages)
+    if not history:
+        raise HTTPException(422, "no text in messages")
+    events = converse(svc.llm, svc.model, svc.tools, history, body.order_id)
+    return StreamingResponse(
+        ui_message_stream(events),
+        media_type="text/event-stream",
+        headers=HEADERS,
+    )
 
 
 @app.post("/transcribe")
