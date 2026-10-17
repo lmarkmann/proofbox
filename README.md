@@ -20,11 +20,11 @@ The packing station films each order, VAST video search finds every item going i
 
 ## Demo
 
-<!--
-Replace VIDEO_ID with the unlisted video's ID (the part after youtu.be/) and delete this comment:
-
-<a href="https://youtu.be/VIDEO_ID"><img alt="ProofBox demo" src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" width="720"></a>
--->
+<p align="center">
+  <a href="https://youtu.be/UgSbvmjAwKs">
+    <img src="https://img.youtube.com/vi/UgSbvmjAwKs/maxresdefault.jpg" alt="Watch the demo" width="640">
+  </a>
+</p>
 
 The demo video goes here.
 
