@@ -91,6 +91,8 @@ VERDICT_LINE = re.compile(
     r"^\W*(?:verdict\W*)?(complete|short|unexpected)\b\W*(.*)",
     re.IGNORECASE | re.DOTALL,
 )
+# the shared system prompt asks every answer to name its packs; the check card shows the pack already
+PACK_NOTE = re.compile(r"\(.*\bpacks?\b.*\)", re.IGNORECASE)
 
 
 class Evidence(BaseModel):
@@ -466,7 +468,11 @@ def parse_check(pack_id: str, reply: str) -> Check:
         {
             "pack_id": pack_id,
             "verdict": found[1].lower(),
-            "text": found[2].strip(),
+            "text": " ".join(
+                line.strip()
+                for line in found[2].splitlines()
+                if not PACK_NOTE.fullmatch(line.strip())
+            ).strip(),
         }
     )
 

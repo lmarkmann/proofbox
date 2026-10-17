@@ -259,6 +259,11 @@ def test_summary_stores_what_cosmos_saw_and_skips_unknown_packs(tmp_path: Path):
             "complete",
             "Everything is there.",
         ),
+        (
+            "short\nMissing coffee mug, scissors.  \n(Analyzed pack a5ae7eb3.)",
+            "short",
+            "Missing coffee mug, scissors.",
+        ),
     ],
 )
 def test_parses_the_verdict_from_the_first_line(

@@ -1,5 +1,7 @@
 import asyncio
+import faulthandler
 import secrets
+import signal
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -69,6 +71,8 @@ class Services:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # ptrace is locked on the VM, so `kill -USR1 <pid>` is the only way to see a hung loop's stacks
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     config = settings.load()
     packs_dir = config.data_dir / "packs"
     packs_dir.mkdir(parents=True, exist_ok=True)
