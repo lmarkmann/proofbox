@@ -2,6 +2,7 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   fmt: {
+    ignorePatterns: [".claude/skills/**", "docs/vast/**"],
     sortTailwindcss: {
       stylesheet: "apps/web/src/index.css",
       functions: ["cn", "cva", "clsx"],
