@@ -24,6 +24,10 @@ check:
     cd apps/printer && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
     cd apps/vision && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
 
+# track a recorded packing clip like the station would and seal it as a pack for an order through the API on :8000; render writes a copy with the boxes burned in
+replay clip order render="":
+    cd apps/vision && uv run proofbox-replay "{{ join(invocation_directory(), clip) }}" --order "{{ order }}" {{ if render == "" { "" } else { "--render '" + join(invocation_directory(), render) + "'" } }}
+
 # rebuild the logo SVGs in docs/assets, copy them into the web app and the label renderer, and regenerate the browser icons
 logo:
     cd docs/assets && uv run build_logo.py --out .
