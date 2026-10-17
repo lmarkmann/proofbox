@@ -4,6 +4,10 @@ import { ActivityLog } from "@/components/activity-log";
 import { type Account, UserMenu } from "@/components/app-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { CameraPanel } from "@/components/camera-panel";
+import { type CheckChoice, SealCheckCard } from "@/components/inspector/seal-check";
+import { type ToolPart, ToolStep } from "@/components/inspector/tool-step";
+import type { CheckState } from "@/hooks/use-seal-check";
+import type { InspectorTools } from "@/lib/inspector";
 import { type Preview, PreviewFrame, type PrintJob, PrintFeedback } from "@/components/label-panel";
 import { NotFoundPage } from "@/components/not-found-page";
 import { OfflineBanner, PackingStation } from "@/components/packing-station";
@@ -122,6 +126,115 @@ const PROOF_STATES: [string, ProofState, SummaryState][] = [
   ["summary not ready yet", packed({}), { tag: "pending" }],
   ["detections still loading, summary loading", packed({}, { tag: "loading" }), { tag: "loading" }],
   ["detections failed, summary failed", packed({}, { tag: "failed" }), { tag: "failed" }],
+];
+
+const SHORT_CHECK: CheckState = {
+  tag: "ready",
+  check: {
+    pack_id: "a5ae7eb3",
+    verdict: "short",
+    text: "Cosmos saw 2 pens go into the box, the order asks for 3.",
+  },
+};
+const SEAL_CHECKS: [string, CheckState, CheckChoice | null][] = [
+  ["checking", { tag: "pending", packId: "a5ae7eb3" }, null],
+  [
+    "agrees",
+    {
+      tag: "ready",
+      check: {
+        pack_id: "a5ae7eb3",
+        verdict: "complete",
+        text: "A mug, a bag of coffee beans and a card went in before the lid closed.",
+      },
+    },
+    null,
+  ],
+  ["short: repack or ship", SHORT_CHECK, null],
+  [
+    "something extra",
+    {
+      tag: "ready",
+      check: {
+        pack_id: "a5ae7eb3",
+        verdict: "unexpected",
+        text: "Besides the 3 pens, a phone was placed in the box and stayed there.",
+      },
+    },
+    null,
+  ],
+  ["shipped as short", SHORT_CHECK, "ship"],
+  ["check never finished", { tag: "unavailable", packId: "a5ae7eb3" }, null],
+];
+const PB_1001: InspectorTools["getOrder"]["output"] = {
+  order_id: "PB-1001",
+  customer: "Acme GmbH, Berlin",
+  items: [
+    { name: "pen", qty: 3 },
+    { name: "notebook", qty: 1 },
+  ],
+  packs: [
+    {
+      pack_id: "a5ae7eb3",
+      sealed_at: "2026-10-17T14:32:00Z",
+      verdict: "short",
+      counts: { pen: 2 },
+    },
+  ],
+};
+const TOOL_STEPS: [string, ToolPart][] = [
+  [
+    "reading the order",
+    {
+      type: "tool-getOrder",
+      toolCallId: "1",
+      state: "input-available",
+      input: { order_id: "PB-1001" },
+    },
+  ],
+  [
+    "read the order",
+    {
+      type: "tool-getOrder",
+      toolCallId: "2",
+      state: "output-available",
+      input: { order_id: "PB-1001" },
+      output: PB_1001,
+    },
+  ],
+  [
+    "Cosmos watching",
+    {
+      type: "tool-watchPack",
+      toolCallId: "3",
+      state: "input-available",
+      input: { pack_id: "a5ae7eb3" },
+    },
+  ],
+  [
+    "Cosmos watched",
+    {
+      type: "tool-watchPack",
+      toolCallId: "4",
+      state: "output-available",
+      input: { pack_id: "a5ae7eb3" },
+      output: {
+        pack_id: "a5ae7eb3",
+        seconds: 11.4,
+        seen: "Two blue pens are placed on the left, then a notebook is laid flat on top.",
+      },
+    },
+  ],
+  [
+    "archive search failed",
+    {
+      type: "tool-searchArchive",
+      toolCallId: "5",
+      state: "output-error",
+      input: { query: "pens" },
+      errorText: "The archive search is not reachable right now.",
+    },
+  ],
 ];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -261,6 +374,24 @@ export default function StateGallery() {
           </div>
         </Section>
 
+        <Section title="Inspector: after-seal check">
+          <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
+            {SEAL_CHECKS.map(([name, state, choice]) => (
+              <Cell key={name} name={name}>
+                <SealCheckCard state={state} orderId="PB-1001" choice={choice} onChoose={noop} />
+              </Cell>
+            ))}
+          </div>
+        </Section>
+        <Section title="Inspector: tool steps">
+          <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
+            {TOOL_STEPS.map(([name, part]) => (
+              <Cell key={name} name={name}>
+                <ToolStep part={part} />
+              </Cell>
+            ))}
+          </div>
+        </Section>
         <Section title="Status strip">
           <Cell name="all checking">
             <StatusStrip
