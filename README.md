@@ -26,3 +26,15 @@ Add UI components from `apps/web` with `pnpm dlx shadcn@latest add <component>`.
 `main` is protected: work on a branch, open a PR, squash-merge it. CI (`linux`) runs format, lint, types, tests and a version drift check.
 
 Every user-facing change gets a changeset: run `pnpm changeset`, pick `web` and the bump, write one sentence, commit it with the code. Merging to `main` opens a "chore: release" PR; merging that tags `vX.Y.Z`. There is one version for the whole repo, so never edit a version by hand.
+
+hein htet phyo
+heinhtetphyo56@gmail.com
+
+pavan sidhu
+pavanssidhu@gmail.com
+
+luis camran markmann
+luis.camran.markmann@gmail.com
+
+riad mc
+riadmc@proton.me
