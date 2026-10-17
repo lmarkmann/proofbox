@@ -1,15 +1,54 @@
-# ProofBox
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/proofbox-wordmark-white.svg">
+    <img alt="ProofBox" src="docs/assets/proofbox-wordmark.svg" width="400">
+  </picture>
+</p>
 
-Per-item packing proof for B2B fulfilment. Built at Real-Time Video Agents Hack London, 17 Oct 2026.
+<p align="center">
+  Per-item packing proof for B2B fulfilment.<br>
+  Built at Real-Time Video Agents Hack London, 17 Oct 2026.
+</p>
+
+<p align="center">
+  <a href="https://proofbox.luis-markmann.workers.dev">proofbox.luis-markmann.workers.dev</a>
+  ·
+  <a href="https://github.com/lmarkmann/proofbox/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/lmarkmann/proofbox/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+</p>
+
+The packing station films each order, VAST video search finds every item going into the box, and the QR code on the printed label opens the proof: a disputed shipment comes with video of exactly what was packed.
+
+## Demo
+
+<!--
+Replace VIDEO_ID with the unlisted video's ID (the part after youtu.be/) and delete this comment:
+
+<a href="https://youtu.be/VIDEO_ID"><img alt="ProofBox demo" src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" width="720"></a>
+-->
+
+The demo video goes here.
+
+## Team
+
+| Name                 | Email                          |
+| -------------------- | ------------------------------ |
+| Hein Htet Phyo       | heinhtetphyo56@gmail.com       |
+| Pavan Sidhu          | pavanssidhu@gmail.com          |
+| Luis Camran Markmann | luis.camran.markmann@gmail.com |
+| Riad Mc              | riadmc@proton.me               |
 
 ## Layout
 
-- `apps/web`: React app on Vite+ with Tailwind v4 and shadcn/ui (Base UI primitives, nova style)
-- `apps/api`: FastAPI service on Python 3.14, managed by uv
-- `apps/printer`: local agent that renders box labels and prints them on a USB JADENS JD-268BT thermal printer
-- `docs/assets`: logo SVGs and `build_logo.py`, which generates them
-- `docs/vast`: the VAST Builders Challenge guides and reference, copied from the organizers' repo
-- `.claude/skills`: the organizers' agent skills for the stack (search, ingest, VastDB, GPU models), loaded by both Claude Code and Cursor; `.cursor/rules/vast-builders.mdc` (symlinked into `.claude/rules`) holds the ground rules
+| Path             | What                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `apps/web`       | React app on Vite+ with Tailwind v4 and shadcn/ui (Base UI primitives, nova style) |
+| `apps/api`       | FastAPI service on Python 3.14, managed by uv                                      |
+| `apps/printer`   | local agent that renders box labels and prints them on a USB JADENS JD-268BT       |
+| `docs/assets`    | logo SVGs and `build_logo.py`, which generates them                                |
+| `docs/vast`      | the VAST Builders Challenge guides and reference, copied from the organizers' repo |
+| `.claude/skills` | the organizers' agent skills for the stack (search, ingest, VastDB, GPU models)    |
+
+The skills load in both Claude Code and Cursor; `.cursor/rules/vast-builders.mdc`, symlinked into `.claude/rules`, holds the ground rules.
 
 ## Getting started
 
@@ -24,17 +63,21 @@ just logo    # regenerate the logo into docs/assets and apps/web/public
 
 Add UI components from `apps/web` with `pnpm dlx shadcn@latest add <component>`.
 
-## Sign-in and deploy
+## Sign-in
 
-The web app signs users in with WorkOS AuthKit (project `proofbox`) before it shows anything. `localhost:5173` uses the Staging environment and the deployed app uses Production, so accounts made in one do not exist in the other. Neither needs an API key: the client IDs in `apps/web/src/main.tsx` are public. The four contributors at the bottom of this file have accounts in both environments: sign in with your email and the code WorkOS sends, or with Google, Microsoft, GitHub or Apple.
+The web app signs users in with WorkOS AuthKit (project `proofbox`) before it shows anything. `localhost:5173` uses the Staging environment and the deployed app uses Production, so an account in one does not exist in the other. The client IDs in `apps/web/src/main.tsx` are public and no API key is involved. Everyone in the team table has an account in both: sign in with your email and the code WorkOS sends, or with Google, Microsoft, GitHub or Apple.
 
-The app deploys as the Cloudflare Worker `proofbox`, static assets only, at <https://proofbox.luis-markmann.workers.dev>:
+A new origin (custom domain, another port) has to be added to the matching WorkOS environment as a redirect URI, CORS origin and logout URI, or sign-in fails.
+
+## Deploy
+
+Every push to `main` deploys the web app as the Cloudflare Worker `proofbox`, static assets only, at <https://proofbox.luis-markmann.workers.dev>: the `deploy` job in `.github/workflows/ci.yml` runs after the `linux` checks pass, in the GitHub environment `production`, with a Workers-scoped Cloudflare token in its `CLOUDFLARE_API_TOKEN` secret. To deploy by hand from a machine logged in with `wrangler login`:
 
 ```sh
-vp run web#deploy   # build, then wrangler deploy (needs wrangler login on Luis's Cloudflare account)
+vp run web#deploy   # build, then wrangler deploy
 ```
 
-A new origin (custom domain, another port) has to be added to the matching WorkOS environment as a redirect URI, CORS origin and logout URI, or sign-in fails. The API and printer agent are not deployed, so on the Worker the header shows both as offline.
+Only the web app is deployed. The API and printer agent run locally, so on the Worker the header shows both as offline.
 
 ## Label printer
 
@@ -58,18 +101,6 @@ A browser tab that has opened the printer over WebUSB holds it until the tab clo
 
 ## Contributing
 
-`main` is protected: work on a branch, open a PR, squash-merge it. CI (`linux`) runs format, lint, types, tests and a version drift check.
+`main` is protected: work on a branch, open a PR, squash-merge it. CI (`linux`) runs format, lint, types, tests and a version drift check; on `main` it then deploys.
 
 Every user-facing change gets a changeset: run `pnpm changeset`, pick `web` and the bump, write one sentence, commit it with the code. Merging to `main` opens a "chore: release" PR; merging that tags `vX.Y.Z`. There is one version for the whole repo, so never edit a version by hand.
-
-hein htet phyo
-heinhtetphyo56@gmail.com
-
-pavan sidhu
-pavanssidhu@gmail.com
-
-luis camran markmann
-luis.camran.markmann@gmail.com
-
-riad mc
-riadmc@proton.me

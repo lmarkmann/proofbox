@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "proofbox",
+  "account_id": "da6d99959e1dda5394e5e0df5aadc961",
   "compatibility_date": "2026-10-17",
   // Serves https://proofbox.luis-markmann.workers.dev, the redirect, CORS and logout URI of the
   // Production environment in the WorkOS project "proofbox". Preview URLs stay off because each
