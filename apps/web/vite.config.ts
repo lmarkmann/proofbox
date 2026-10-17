@@ -11,6 +11,8 @@ export default defineConfig({
     },
   },
   server: {
+    // `just tunnel` serves this dev server on a random *.trycloudflare.com host
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
         // a second worktree tunnels the VM API to another port, since the first holds :8000

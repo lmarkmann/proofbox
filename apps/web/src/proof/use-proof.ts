@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
 import {
-  type Answer,
   ApiError,
-  ask,
+  type CosmosSummary,
   getOrder,
+  getSummary,
   getTrack,
   type OrderDetail,
   type PackSummary,
@@ -17,10 +17,10 @@ export type ProofSource = {
   getOrder: (orderId: string) => Promise<OrderDetail>;
   getTrack: (packId: string) => Promise<TrackPoint[]>;
   videoUrl: (packId: string) => string;
-  ask: (question: string, orderId: string, signal?: AbortSignal) => Promise<Answer>;
+  getSummary: (packId: string, signal?: AbortSignal) => Promise<CosmosSummary>;
 };
 
-export const apiSource: ProofSource = { getOrder, getTrack, videoUrl: packVideoUrl, ask };
+export const apiSource: ProofSource = { getOrder, getTrack, videoUrl: packVideoUrl, getSummary };
 
 export type TrackState =
   | { tag: "loading" }
@@ -36,10 +36,11 @@ export type ProofState =
 
 export type SummaryState =
   | { tag: "loading" }
-  | { tag: "ready"; answer: Answer }
+  | { tag: "pending" }
+  | { tag: "ready"; summary: CosmosSummary }
   | { tag: "failed" };
 
-const SUMMARY_QUESTION = "Describe exactly what was packed into this box";
+const SUMMARY_POLL_MS = 5000;
 
 export function useProof(orderId: string, source: ProofSource, attempt: number): ProofState {
   const [state, setState] = useState<ProofState>({ tag: "loading" });
@@ -80,21 +81,31 @@ export function useProof(orderId: string, source: ProofSource, attempt: number):
   return state;
 }
 
-export function useSummary(orderId: string, source: ProofSource, enabled: boolean): SummaryState {
+export function useSummary(packId: string | null, source: ProofSource): SummaryState {
   const [state, setState] = useState<SummaryState>({ tag: "loading" });
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!packId) return;
     const controller = new AbortController();
+    let poll: ReturnType<typeof setTimeout> | undefined;
+    const load = () =>
+      source.getSummary(packId, controller.signal).then(
+        (summary) => setState({ tag: "ready", summary }),
+        (cause: unknown) => {
+          if (controller.signal.aborted) return;
+          if (cause instanceof ApiError && cause.status === 404) {
+            setState({ tag: "pending" });
+            poll = setTimeout(load, SUMMARY_POLL_MS);
+          } else setState({ tag: "failed" });
+        },
+      );
     setState({ tag: "loading" });
-    source.ask(SUMMARY_QUESTION, orderId, controller.signal).then(
-      (answer) => setState({ tag: "ready", answer }),
-      () => {
-        if (!controller.signal.aborted) setState({ tag: "failed" });
-      },
-    );
-    return () => controller.abort();
-  }, [orderId, source, enabled]);
+    void load();
+    return () => {
+      controller.abort();
+      clearTimeout(poll);
+    };
+  }, [packId, source]);
 
   return state;
 }

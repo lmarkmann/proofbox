@@ -220,7 +220,7 @@ export function ProofPage({
 }) {
   const [attempt, setAttempt] = useState(0);
   const state = useProof(orderId, source, attempt);
-  const summary = useSummary(orderId, source, state.tag === "packed");
+  const summary = useSummary(state.tag === "packed" ? state.pack.pack_id : null, source);
   return (
     <ProofView
       orderId={orderId}

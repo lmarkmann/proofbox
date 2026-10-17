@@ -25,6 +25,10 @@ deploy-api:
     ssh {{vm}} 'bash -lc "fuser -k 8000/tcp; cd ~/proofbox-api/apps/api && ~/.local/bin/uv sync --frozen -q; PYTHONWARNINGS=\"ignore:Unverified HTTPS request\" nohup .venv/bin/uvicorn proofbox_api:app --host 127.0.0.1 --port 8000 > ~/proofbox-api.log 2>&1 < /dev/null &" > /dev/null 2>&1 < /dev/null' < /dev/null
     ssh {{vm}} 'for i in $(seq 30); do curl -sf 127.0.0.1:8000/health && exit; sleep 2; done; tail -20 ~/proofbox-api.log; exit 1' < /dev/null
 
+# serve the dev server on :5173 at a public *.trycloudflare.com URL, for scanning labels when the Worker cannot reach the API
+tunnel:
+    cloudflared tunnel --no-autoupdate --url http://localhost:5173
+
 # version drift, then format, lint, typecheck and test every app
 check:
     pnpm run --silent version:check
@@ -33,6 +37,10 @@ check:
     cd apps/api && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
     cd apps/printer && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
     cd apps/vision && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
+
+# track a recorded packing clip like the station would and seal it as a pack for an order through the API on :8000; render writes a copy with the boxes burned in
+replay clip order render="":
+    cd apps/vision && uv run proofbox-replay "{{ join(invocation_directory(), clip) }}" --order "{{ order }}" {{ if render == "" { "" } else { "--render '" + join(invocation_directory(), render) + "'" } }}
 
 # rebuild the logo SVGs in docs/assets, copy them into the web app and the label renderer, and regenerate the browser icons
 logo:
