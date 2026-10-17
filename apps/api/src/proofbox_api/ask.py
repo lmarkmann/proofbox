@@ -133,9 +133,10 @@ async def watch_pack(tools: Toolbox, pack_id: str, question: str) -> ToolResult:
     expected = ", ".join(f"{item.qty} x {item.name}" for item in order.items)
     seen = await tools.cosmos.watch(
         clip,
-        f"This clip was recorded at a packing station while order {order.order_id} was packed. "
-        f"The order should contain: {expected}. {question} "
-        "Answer only from what is visible and give the second at which each item goes into the box.",
+        f"This clip should show order {order.order_id} being packed into a shipping box; the order lists {expected}. "
+        "Do not assume the order list is right. First describe what the clip actually shows. "
+        "Then, for each listed item, say seen with the second it goes into the box, or not seen. "
+        f"{question}",
     )
     return {"pack_id": pack_id, "cosmos": seen}, [
         Evidence(

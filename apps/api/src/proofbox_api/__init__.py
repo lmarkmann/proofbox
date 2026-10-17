@@ -234,10 +234,9 @@ async def seal_pack(
             clip,
             content_type.split(";")[0],
             [order.order_id, pack_id],
-            f"A packing station camera records order {order.order_id} being packed into a shipping box. "
-            f"The order should contain: {expected}. "
-            "Describe each item placed into the box, in order, with the time it goes in, "
-            "and say whether any expected item is missing or anything else was packed.",
+            f"A packing station camera should show order {order.order_id} being packed into a shipping box; the order lists {expected}. "
+            "Do not assume the order list is right. Describe each item you see placed into the box, in order, with the time it goes in. "
+            "Then, for each listed item, say seen or not seen, and name anything packed that is not on the list.",
         )
     except httpx.HTTPError as error:
         errors.append(f"VSS upload {type(error).__name__}: {error}")

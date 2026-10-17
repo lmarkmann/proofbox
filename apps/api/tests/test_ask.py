@@ -170,7 +170,7 @@ def test_dispatches_each_tool_and_collects_evidence(tmp_path: Path):
     assert tool_messages["c1"]["packs"][0]["verdict"] == "short"
     assert tool_messages["c2"]["cosmos"].startswith("A mug goes in")
     assert tool_messages["c3"]["answer"] == "One matching pack."
-    assert "1 x coffee mug, 1 x scissors" in cosmos.prompts[0]
+    assert "lists 1 x coffee mug, 1 x scissors" in cosmos.prompts[0]
     assert vss.searches == [("scissors", ["PB-1001"])]
     assert [(e.pack_id, e.start_s) for e in answer.evidence] == [
         ("0a1b2c3d", None),
