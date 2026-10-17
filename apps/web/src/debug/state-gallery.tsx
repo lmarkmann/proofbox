@@ -78,7 +78,7 @@ const packed = (
 });
 const SUMMARY_READY: SummaryState = {
   tag: "ready",
-  answer: { answer: demoSummary, evidence: [] },
+  summary: { pack_id: DEMO_PACK.pack_id, text: demoSummary, evidence: [] },
 };
 const PROOF_STATES: [string, ProofState, SummaryState][] = [
   ["loading", { tag: "loading" }, { tag: "loading" }],
@@ -102,6 +102,7 @@ const PROOF_STATES: [string, ProofState, SummaryState][] = [
     packed({ verdict: "unexpected", counts: { ...DEMO_PACK.counts, tape: 1 } }),
     SUMMARY_READY,
   ],
+  ["summary not ready yet", packed({}), { tag: "pending" }],
   ["detections still loading, summary loading", packed({}, { tag: "loading" }), { tag: "loading" }],
   ["detections failed, summary failed", packed({}, { tag: "failed" }), { tag: "failed" }],
 ];

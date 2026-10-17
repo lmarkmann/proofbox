@@ -44,11 +44,12 @@ export const demoSource: ProofSource = {
     return demoPoints;
   },
   videoUrl: () => demoVideoUrl,
-  ask: async (_question, orderId) => {
+  getSummary: async (packId) => {
     await wait(1800);
     return {
-      answer: demoSummary,
-      evidence: [{ pack_id: "demo", order_id: orderId, start_s: 1.5, end_s: 9, text: demoSummary }],
+      pack_id: packId,
+      text: demoSummary,
+      evidence: [{ pack_id: packId, start_s: 1.5, end_s: 9, text: demoSummary }],
     };
   },
 };
