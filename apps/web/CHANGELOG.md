@@ -1,5 +1,12 @@
 # web
 
+## 0.8.0
+
+### Minor Changes
+
+- f52ff54: API: `POST /chat` streams answers in the AI SDK UI message stream protocol (tool parts, evidence data parts, streamed text, Weave trace link), on one agent loop shared with `POST /ask`.
+- f52ff54: API: after a seal the agent checks the pack clip against the order lines and stores a verdict in `proofbox.checks`, served at `GET /packs/{pack_id}/check`.
+
 ## 0.7.0
 
 ### Minor Changes
