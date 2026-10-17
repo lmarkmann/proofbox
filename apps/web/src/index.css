@@ -149,3 +149,121 @@
     opacity: 0.6;
   }
 }
+
+/* The three-way theme switch from the murios lander: an inset track with a thumb that slides to the choice. */
+.theme-switch {
+  --size: 1.75rem;
+  --gap: 2px;
+  --track: oklch(0.92 0.004 75);
+  --track-shade: rgb(40 33 30 / 0.16);
+  --track-light: rgb(255 255 255 / 0.75);
+  --thumb-top: #fffdf9;
+  --thumb-bottom: #f1ece4;
+  --thumb-edge: rgb(40 33 30 / 0.14);
+  --thumb-shine: rgb(255 255 255 / 0.95);
+  --thumb-drop: rgb(40 33 30 / 0.18);
+  position: relative;
+  display: flex;
+  gap: var(--gap);
+  padding: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--track);
+  box-shadow:
+    inset 0 1px 2px var(--track-shade),
+    inset 0 0 0 1px var(--track-shade),
+    0 1px 0 var(--track-light);
+  view-transition-name: theme-switch;
+}
+
+.dark .theme-switch {
+  --track: #0d0b0a;
+  --track-shade: rgb(0 0 0 / 0.7);
+  --track-light: rgb(255 255 255 / 0.05);
+  --thumb-top: #3b3430;
+  --thumb-bottom: #2b2522;
+  --thumb-edge: rgb(0 0 0 / 0.5);
+  --thumb-shine: rgb(255 255 255 / 0.1);
+  --thumb-drop: rgb(0 0 0 / 0.55);
+}
+
+.theme-switch .thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 999px;
+  background: linear-gradient(var(--thumb-top), var(--thumb-bottom));
+  box-shadow:
+    inset 0 1px 0 var(--thumb-shine),
+    0 0 0 1px var(--thumb-edge),
+    0 1px 2px var(--thumb-drop),
+    0 3px 8px -2px var(--thumb-drop);
+  transition: translate 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-switch[data-choice="light"] .thumb {
+  translate: calc(var(--size) + var(--gap));
+}
+
+.theme-switch[data-choice="dark"] .thumb {
+  translate: calc(2 * (var(--size) + var(--gap)));
+}
+
+.theme-switch label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 999px;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition:
+    color 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-switch label:hover,
+.theme-switch label:has(:checked) {
+  color: var(--color-foreground);
+}
+
+.theme-switch label:active {
+  scale: 0.96;
+}
+
+.theme-switch label:has(:focus-visible) {
+  outline: 2px solid var(--color-foreground);
+  outline-offset: 1px;
+}
+
+.theme-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+::view-transition-old(theme-switch) {
+  display: none;
+}
+
+::view-transition-new(theme-switch) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch .thumb {
+    transition: none;
+  }
+  .theme-switch label {
+    transition: color 120ms;
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}

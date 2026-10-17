@@ -2,6 +2,7 @@ import { type ReactNode, useRef } from "react";
 
 import { ActivityLog } from "@/components/activity-log";
 import { type Account, UserMenu } from "@/components/app-header";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { CameraPanel } from "@/components/camera-panel";
 import { type Preview, PreviewFrame, type PrintJob, PrintFeedback } from "@/components/label-panel";
 import { OfflineBanner, PackingStation } from "@/components/packing-station";
@@ -28,11 +29,18 @@ const CAMERA_FAILURES: CameraFailure[] = [
 const ACCOUNTS: [string, Account][] = [
   [
     "named, no picture",
-    { email: "packer@example.com", firstName: "Sam", lastName: "Rivera", profilePictureUrl: null },
+    {
+      id: "user_01SAMPLEPACKER",
+      email: "packer@example.com",
+      firstName: "Sam",
+      lastName: "Rivera",
+      profilePictureUrl: null,
+    },
   ],
   [
     "email only, long address",
     {
+      id: "user_01SAMPLENIGHTSHIFT",
       email: "night-shift.station-04@fulfilment.example.com",
       firstName: null,
       lastName: null,
@@ -133,9 +141,10 @@ export default function StateGallery() {
 
         <Section title="Account menu">
           <div className="grid gap-6 md:grid-cols-2">
-            {ACCOUNTS.map(([name, account]) => (
+            {ACCOUNTS.map(([name, account], index) => (
               <Cell key={name} name={name}>
-                <div className="flex justify-end rounded-xl bg-background p-2 ring-1 ring-foreground/10">
+                <div className="flex items-center justify-end gap-3 rounded-xl bg-background p-2 ring-1 ring-foreground/10">
+                  {index === 0 && <ThemeSwitch />}
                   <UserMenu user={account} onSignOut={noop} />
                 </div>
               </Cell>
