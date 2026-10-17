@@ -12,6 +12,7 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field, StringConstraints, ValidationError
 from ultralytics import YOLOE
+from ultralytics.engine.results import Results
 
 WEIGHTS = "yoloe-26s-seg.pt"
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
@@ -37,17 +38,7 @@ def prompt(names: list[str]) -> None:
     model.set_classes(names, prompt_embeddings[key])
 
 
-def detect(jpeg: bytes) -> list[dict]:
-    frame = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
-    (result,) = model.track(
-        frame,
-        persist=True,
-        tracker="bytetrack.yaml",
-        device=DEVICE,
-        imgsz=640,
-        conf=0.25,
-        verbose=False,
-    )
+def detections(result: Results) -> list[dict]:
     boxes = result.boxes
     if boxes is None:
         return []
@@ -71,6 +62,27 @@ def detect(jpeg: bytes) -> list[dict]:
             strict=True,
         )
     ]
+
+
+def detect(frame: np.ndarray) -> list[dict]:
+    """Tracks one BGR frame against the prompted classes, continuing the previous frame's tracks."""
+    (result,) = model.track(
+        frame,
+        persist=True,
+        tracker="bytetrack.yaml",
+        device=DEVICE,
+        imgsz=640,
+        conf=0.25,
+        verbose=False,
+    )
+    return detections(result)
+
+
+def detect_jpeg(jpeg: bytes) -> list[dict]:
+    frame = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+    if frame is None:
+        raise ValueError("frame is not a decodable JPEG")
+    return detect(frame)
 
 
 def warm_up() -> None:
@@ -138,7 +150,7 @@ async def stream(socket: WebSocket) -> None:
                 continue
             started = time.perf_counter()
             boxes = await loop.run_in_executor(
-                inference, detect, message["bytes"]
+                inference, detect_jpeg, message["bytes"]
             )
             frame += 1
             await socket.send_json(
