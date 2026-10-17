@@ -15,7 +15,7 @@ Every state below renders without reproducing its backend condition at `http://l
 | Activity      | n/a                                    | n/a                                                                                                  | first run: "No boxes labelled yet" with a CTA that focuses the order ID | n/a                                                                                                   | n/a                                                          | N.A.                                           | session-local list                                    |
 | Shell         | n/a                                    | auth splash while WorkOS resolves (fades in after 200 ms)                                            | n/a                                                                     | per-panel crash card                                                                                  | other panels keep working when one crashes                   | N.A.                                           | amber banner                                          |
 
-Form validation on the label: order ID required (shown on blur or print, focus moves to the field), details capped at 3 lines with a live counter. Entered values are kept on every failure and cleared only after a successful print.
+Form validation on the label: order ID marked required with an asterisk and no error text (printing with it empty moves focus to the field; the preview waits for it), details capped at 3 lines with a live counter. Entered values are kept on every failure and cleared only after a successful print.
 
 ## Boundaries
 

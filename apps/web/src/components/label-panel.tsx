@@ -216,7 +216,6 @@ export function LabelPanel({
 }) {
   const [orderId, setOrderId] = useState("");
   const [details, setDetails] = useState("");
-  const [orderTouched, setOrderTouched] = useState(false);
   const [preview, setPreview] = useState<Preview>({ tag: "waiting" });
   const [job, setJob] = useState<PrintJob>({ tag: "idle" });
   const orderInput = useRef<HTMLInputElement>(null);
@@ -231,8 +230,6 @@ export function LabelPanel({
     proof_url: `${window.location.origin}/proof/${encodeURIComponent(orderId.trim())}`,
     lines,
   };
-  const orderError =
-    orderTouched && !label.order_id ? "Enter the order ID from the packing slip." : null;
   const linesError =
     lines.length > MAX_LINES
       ? `Keep it to ${MAX_LINES} lines; the label has room for three.`
@@ -283,7 +280,6 @@ export function LabelPanel({
   }
 
   async function print() {
-    setOrderTouched(true);
     if (!label.order_id) {
       orderInput.current?.focus();
       return;
@@ -297,7 +293,6 @@ export function LabelPanel({
       setJob({ tag: "printed", ...printed });
       setOrderId("");
       setDetails("");
-      setOrderTouched(false);
       orderInput.current?.focus();
     } catch (cause) {
       setJob({ tag: "failed", failure: toPrinterFailure(cause) });
@@ -312,24 +307,22 @@ export function LabelPanel({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="order-id">Order ID</Label>
+          <Label htmlFor="order-id">
+            Order ID
+            <span aria-hidden className="-ml-1 text-muted-foreground">
+              *
+            </span>
+          </Label>
           <Input
             ref={orderInput}
             id="order-id"
             placeholder="PB-20481"
             maxLength={40}
             autoComplete="off"
+            required
             value={orderId}
             onChange={(event) => edit(() => setOrderId(event.target.value))}
-            onBlur={() => setOrderTouched(true)}
-            aria-invalid={Boolean(orderError)}
-            aria-describedby={orderError ? "order-id-error" : undefined}
           />
-          {orderError && (
-            <p id="order-id-error" className="text-xs text-destructive">
-              {orderError}
-            </p>
-          )}
         </div>
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
