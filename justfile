@@ -1,7 +1,8 @@
-# install JS and Python dependencies
+# install JS and Python dependencies and the git hooks
 setup:
     pnpm install
     uv sync --project apps/api
+    prek install --prepare-hooks
 
 # run the API on :8000 and the web app on :5173, which proxies /api to it
 dev:
@@ -10,8 +11,9 @@ dev:
     (cd apps/api && uv run proofbox-api) &
     pnpm dev
 
-# format, lint, typecheck and test both apps
+# version drift, then format, lint, typecheck and test both apps
 check:
+    pnpm run --silent version:check
     vp check
     cd apps/api && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
 

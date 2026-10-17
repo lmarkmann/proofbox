@@ -1,13 +1,15 @@
 {
   "name": "proofbox",
-  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "ready": "vp check && vp run -r build",
-    "dev": "vp run web#dev"
+    "dev": "vp run web#dev",
+    "release:version": "changeset version && node scripts/sync-version.mjs && uv lock --project apps/api",
+    "version:check": "node scripts/sync-version.mjs --check"
   },
   "devDependencies": {
+    "@changesets/cli": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

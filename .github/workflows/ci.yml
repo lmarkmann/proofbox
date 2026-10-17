@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: pnpm
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          cache: true
+          require-lockfile: true
+      - name: uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          prune-cache: true
+      - name: tools
+        uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe # v2.87.27
+        with:
+          tool: zizmor
+          fallback: none
+      - name: versions agree
+        run: pnpm run version:check
+      - name: web check
+        run: pnpm exec vp check
+      - name: web build
+        run: pnpm exec vp run web#build
+      - name: api sync
+        working-directory: apps/api
+        run: uv sync --locked
+      - name: api format
+        working-directory: apps/api
+        run: uv run --locked ruff format --check
+      - name: api lint
+        working-directory: apps/api
+        run: uv run --locked ruff check --output-format=github
+      - name: api types
+        working-directory: apps/api
+        run: uv run --locked pyrefly check --output-format=full-text-with-github
+      - name: api test
+        working-directory: apps/api
+        run: uv run --locked pytest -q
+      - name: workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zizmor --format=github .
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12

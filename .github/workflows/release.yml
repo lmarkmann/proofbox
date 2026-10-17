@@ -1,0 +1,72 @@
+# On every push to main: pending changesets open or update the version PR and queue
+# it for auto-merge. Merging it releases: one vX.Y.Z tag and GitHub release, taken
+# from apps/web/package.json, the single source of the ProofBox version.
+# The App token is what makes CI run on the version PR and the release run on its
+# merge; GITHUB_TOKEN events trigger neither.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: harden runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - name: token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # changeset version reads history to date each changeset; a shallow clone would refetch without credentials.
+          fetch-depth: 0
+      - name: pnpm
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          cache: false
+          require-lockfile: true
+      - name: uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          enable-cache: false
+      - name: changesets
+        id: changesets
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          version-script: pnpm run release:version
+          pr-title: "chore: release"
+          commit-message: "chore: release"
+      - name: automerge
+        if: steps.changesets.outputs.pr-number != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          PR: ${{ steps.changesets.outputs.pr-number }}
+        run: gh pr merge --auto --squash "$PR"
+      - name: tag
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version="$(jq -r .version apps/web/package.json)"
+          gh release view "v$version" > /dev/null 2>&1 && exit 0
+          notes="$(awk -v heading="## $version" '$0 == heading {found = 1; next} /^## / {found = 0} found' apps/web/CHANGELOG.md 2> /dev/null || true)"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --notes "${notes:-First release.}"

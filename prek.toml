@@ -1,0 +1,75 @@
+default_install_hook_types = ["pre-commit", "pre-push"]
+
+[priorities]
+format = 0
+lint = 1
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "check-merge-conflict" },
+  { id = "check-added-large-files" },
+  { id = "check-case-conflict" },
+  { id = "detect-private-key" },
+  { id = "end-of-file-fixer", priority = "format" },
+  { id = "trailing-whitespace", priority = "format" },
+  { id = "check-yaml", args = [
+    "--allow-multiple-documents",
+  ] },
+  { id = "check-toml" },
+  { id = "check-json", exclude = "tsconfig.*\\.json$" },
+  { id = "no-commit-to-branch", args = [
+    "--branch",
+    "main",
+  ] },
+]
+
+[[repos]]
+repo = "meta"
+hooks = [{ id = "check-useless-excludes" }]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "vp-fmt"
+name = "vp fmt"
+language = "system"
+entry = "pnpm exec vp fmt --no-error-on-unmatched-pattern"
+types_or = ["javascript", "jsx", "ts", "tsx", "css", "json", "yaml", "markdown", "toml"]
+priority = "format"
+
+[[repos.hooks]]
+id = "vp-lint"
+name = "vp lint"
+language = "system"
+entry = "pnpm exec vp lint"
+types_or = ["javascript", "jsx", "ts", "tsx"]
+priority = "lint"
+
+[[repos.hooks]]
+id = "ruff-format"
+name = "ruff format"
+language = "system"
+entry = "uv run --project apps/api --locked ruff format"
+files = "^apps/api/"
+types = ["python"]
+priority = "format"
+
+[[repos.hooks]]
+id = "ruff-check"
+name = "ruff check"
+language = "system"
+entry = "uv run --project apps/api --locked ruff check --fix"
+files = "^apps/api/"
+types = ["python"]
+priority = "lint"
+
+[[repos.hooks]]
+id = "just-check"
+name = "just check"
+language = "system"
+entry = "just check"
+pass_filenames = false
+always_run = true
+stages = ["pre-push"]
