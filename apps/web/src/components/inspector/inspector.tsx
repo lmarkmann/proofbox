@@ -167,7 +167,7 @@ function voiceHint(voice: VoiceState) {
     );
   if (voice.tag === "failed") return <span className="text-destructive">{voice.detail}</span>;
   return (
-    <span className="flex items-center gap-1.5">
+    <span className="hidden items-center gap-1.5 pointer-fine:flex">
       Hold <Kbd>Space</Kbd> to talk
     </span>
   );
