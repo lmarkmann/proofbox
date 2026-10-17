@@ -11,14 +11,22 @@ export default defineConfig({
     },
   },
   server: {
+    // `just tunnel` serves this dev server on a random *.trycloudflare.com host
+    allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8000",
+        // a second worktree tunnels the VM API to another port, since the first holds :8000
+        target: process.env.PROOFBOX_API ?? "http://127.0.0.1:8000",
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
       "/printer": {
         target: "http://127.0.0.1:8001",
         rewrite: (path) => path.replace(/^\/printer/, ""),
+      },
+      "/vision": {
+        target: "http://127.0.0.1:8002",
+        ws: true,
+        rewrite: (path) => path.replace(/^\/vision/, ""),
       },
     },
   },

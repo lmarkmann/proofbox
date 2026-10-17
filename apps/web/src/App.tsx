@@ -3,9 +3,22 @@ import { lazy, Suspense, useEffect } from "react";
 
 import { PackingStation } from "@/components/packing-station";
 import { SignInScreen } from "@/components/sign-in-screen";
+import { ProofPage } from "@/proof/proof-page";
 
 // dev only: /?states renders every UI state; production builds drop this import entirely
 const StateGallery = import.meta.env.DEV ? lazy(() => import("@/debug/state-gallery")) : null;
+// dev only: /proof/PB-DEMO replays a synthetic sample pack without the API
+const PackDemo = import.meta.env.DEV ? lazy(() => import("@/debug/pack-demo")) : null;
+
+function proofOrderId(pathname: string) {
+  const match = /^\/proof\/([^/]+)\/?$/.exec(pathname);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
 
 export function AuthSplash() {
   return (
@@ -34,6 +47,18 @@ export function App() {
         <StateGallery />
       </Suspense>
     );
+  }
+
+  // the proof page is public: whoever scans the label has no ProofBox account
+  const proofId = proofOrderId(window.location.pathname);
+  if (proofId) {
+    if (PackDemo && proofId === "PB-DEMO")
+      return (
+        <Suspense fallback={null}>
+          <PackDemo />
+        </Suspense>
+      );
+    return <ProofPage orderId={proofId} />;
   }
 
   if (isLoading) return <AuthSplash />;

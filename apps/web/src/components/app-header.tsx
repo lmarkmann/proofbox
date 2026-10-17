@@ -1,8 +1,11 @@
+import { notionists } from "@dicebear/collection";
+import { createAvatar } from "@dicebear/core";
 import { type User, useAuth } from "@workos-inc/authkit-react";
-import { ChevronDownIcon, LogOutIcon, UserRoundIcon } from "lucide-react";
+import { LogOutIcon } from "lucide-react";
+import { useMemo } from "react";
 
-import { useTheme } from "@/components/theme-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,63 +13,49 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Theme = "light" | "dark" | "system";
+export type Account = Pick<User, "id" | "email" | "firstName" | "lastName" | "profilePictureUrl">;
 
-export type Account = Pick<User, "email" | "firstName" | "lastName" | "profilePictureUrl">;
+const AVATAR_BACKGROUNDS = ["f4d9b8", "c9e4d4", "d6dcf5", "f5d0d6", "efe3b5"];
+
+/** The WorkOS picture when there is one, else a DiceBear face drawn in the browser from the user id. */
+function AccountAvatar({ user, className }: { user: Account; className?: string }) {
+  const face = useMemo(
+    () =>
+      createAvatar(notionists, { seed: user.id, backgroundColor: AVATAR_BACKGROUNDS }).toDataUri(),
+    [user.id],
+  );
+  return (
+    <Avatar className={className}>
+      <AvatarImage src={user.profilePictureUrl ?? face} alt="" />
+    </Avatar>
+  );
+}
 
 export function UserMenu({ user, onSignOut }: { user: Account; onSignOut: () => void }) {
-  const { theme, setTheme } = useTheme();
   const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="ghost"
-            className="h-9 gap-2 px-1.5 sm:pr-2.5"
-            aria-label="Account menu"
-          />
+          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu" />
         }
       >
-        <Avatar size="sm" className="size-7">
-          {user.profilePictureUrl && <AvatarImage src={user.profilePictureUrl} alt="" />}
-          <AvatarFallback>
-            <UserRoundIcon className="size-4" />
-          </AvatarFallback>
-        </Avatar>
-        <span className="hidden max-w-52 truncate text-sm font-normal md:inline">{user.email}</span>
-        <ChevronDownIcon className="hidden size-4 text-muted-foreground md:block" />
+        <AccountAvatar user={user} className="size-8" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex items-center gap-2.5 px-1.5 py-2">
-            <Avatar>
-              {user.profilePictureUrl && <AvatarImage src={user.profilePictureUrl} alt="" />}
-              <AvatarFallback>
-                <UserRoundIcon className="size-4" />
-              </AvatarFallback>
-            </Avatar>
+            <AccountAvatar user={user} className="size-9" />
             <span className="flex min-w-0 flex-col">
               {name && <span className="truncate text-sm font-medium text-foreground">{name}</span>}
               <span className="truncate text-xs font-normal">{user.email}</span>
             </span>
           </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Theme</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
-            <DropdownMenuRadioItem value="light">Light</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="dark">Dark</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="system">System</DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onSignOut}>
@@ -88,7 +77,8 @@ export function AppHeader() {
         </a>
         <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
         <span className="hidden text-sm text-muted-foreground sm:block">Packing station</span>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          <ThemeSwitch />
           {user && <UserMenu user={user} onSignOut={() => signOut()} />}
         </div>
       </div>
