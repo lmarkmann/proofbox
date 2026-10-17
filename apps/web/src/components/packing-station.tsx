@@ -5,6 +5,7 @@ import { ActivityLog } from "@/components/activity-log";
 import { AppHeader } from "@/components/app-header";
 import { CameraPanel } from "@/components/camera-panel";
 import { LabelPanel, type PrintedLabel } from "@/components/label-panel";
+import { Omnibox } from "@/components/omnibox";
 import { PackHud, PackPanel } from "@/components/pack-panel";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
@@ -106,6 +107,7 @@ export function PackingStation() {
           labelCount={labels.length}
           lastLabelAt={labels[0]?.at ?? null}
         />
+        <Omnibox orderId={boundOrderId} />
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
           <div className="min-w-0">
             <PanelBoundary title="Bench camera">
