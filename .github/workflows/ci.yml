@@ -44,6 +44,9 @@ jobs:
         run: pnpm exec vp check
       - name: web build
         run: pnpm exec vp run web#build
+      - name: worker config
+        working-directory: apps/web
+        run: pnpm exec wrangler deploy --dry-run
       - name: api sync
         working-directory: apps/api
         run: uv sync --locked

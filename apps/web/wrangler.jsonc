@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "proofbox",
+  "compatibility_date": "2026-10-17",
+  // Serves https://proofbox.luis-markmann.workers.dev, the redirect, CORS and logout URI of the
+  // Production environment in the WorkOS project "proofbox". Preview URLs stay off because each
+  // would need its own redirect URI there.
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 1 },
+  },
+}
