@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -12,6 +13,7 @@ import httpx
 import uvicorn
 import weave
 from fastapi import (
+    BackgroundTasks,
     Depends,
     FastAPI,
     Form,
@@ -26,7 +28,7 @@ from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from proofbox_api import canary, settings
-from proofbox_api.ask import Answer, Toolbox, ask
+from proofbox_api.ask import Answer, Evidence, Toolbox, ask, watch_pack
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import (
     Order,
@@ -150,6 +152,33 @@ class Transcript(BaseModel):
     text: str
 
 
+class Summary(BaseModel):
+    pack_id: str
+    text: str
+    evidence: list[Evidence]
+
+
+log = logging.getLogger("proofbox_api")
+
+
+async def summarize(tools: Toolbox, pack_id: str) -> None:
+    """Has Cosmos describe the sealed clip once, so the public proof page never calls /ask."""
+    try:
+        result, evidence = await watch_pack(
+            tools, pack_id, "Describe exactly what was packed into this box."
+        )
+    except Exception as error:
+        log.exception("summary for pack %s failed", pack_id)
+        (tools.packs_dir / f"{pack_id}.summary-error.txt").write_text(
+            f"{type(error).__name__}: {error}"
+        )
+        return
+    summary = Summary(pack_id=pack_id, text=result["cosmos"], evidence=evidence)
+    (tools.packs_dir / f"{pack_id}.summary.json").write_text(
+        summary.model_dump_json()
+    )
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "version": app.version}
@@ -198,6 +227,7 @@ def open_pack(svc: Svc, body: NewPack) -> OpenPack:
 @app.post("/packs/{pack_id}/seal")
 async def seal_pack(
     svc: Svc,
+    background: BackgroundTasks,
     pack_id: PackId,
     video: UploadFile,
     track: Annotated[str, Form()],
@@ -251,6 +281,7 @@ async def seal_pack(
         verdict=judge(order, counts),
     )
     await asyncio.to_thread(svc.store.insert_pack, sealed, points)
+    background.add_task(summarize, svc.tools, pack_id)
     return Sealed(
         pack_id=pack_id,
         order_id=order.order_id,
@@ -274,6 +305,18 @@ def pack_track(svc: Svc, pack_id: PackId) -> list[TrackPoint]:
     if svc.store.pack(pack_id) is None:
         raise HTTPException(404, f"no sealed pack {pack_id}")
     return svc.store.track(pack_id)
+
+
+@app.get("/packs/{pack_id}/summary")
+def pack_summary(svc: Svc, pack_id: PackId) -> Summary:
+    """404 while Cosmos is still describing the pack, 502 if it gave up."""
+    failed = svc.packs_dir / f"{pack_id}.summary-error.txt"
+    if failed.exists():
+        raise HTTPException(502, f"Cosmos: {failed.read_text()}")
+    ready = svc.packs_dir / f"{pack_id}.summary.json"
+    if not ready.exists():
+        raise HTTPException(404, f"no summary for pack {pack_id} yet")
+    return Summary.model_validate_json(ready.read_text())
 
 
 @app.post("/ask")
