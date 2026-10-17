@@ -25,7 +25,7 @@ export type InspectorTools = {
   };
   searchArchive: {
     input: { query?: string };
-    output: { query: string; hits: ArchiveHit[] };
+    output: { query: string; answer: string; hits: ArchiveHit[] };
   };
 };
 

@@ -67,17 +67,20 @@ function describe(part: ToolPart): Step {
         running: query ? `Searching the VAST archive for "${query}"` : "Searching the VAST archive",
         done: query ? `Searched the VAST archive for "${query}"` : "Searched the VAST archive",
         detail: hits && `${hits.length} ${hits.length === 1 ? "clip" : "clips"}`,
-        body: hits && (
-          <ul className="flex flex-col gap-1.5">
-            {hits.map((hit, index) => (
-              <li key={index} className="text-pretty">
-                <span className="font-medium text-foreground tabular-nums">
-                  {hit.order_id ?? shortId(hit.pack_id)} {clipRange(hit)}
-                </span>{" "}
-                {hit.text}
-              </li>
-            ))}
-          </ul>
+        body: part.output && (
+          <div className="flex flex-col gap-2">
+            <p className="text-pretty">{part.output.answer}</p>
+            <ul className="flex flex-col gap-1">
+              {part.output.hits.map((hit, index) => (
+                <li key={index} className="truncate tabular-nums">
+                  <span className="font-medium text-foreground">
+                    {hit.order_id ?? shortId(hit.pack_id)} {clipRange(hit)}
+                  </span>{" "}
+                  {hit.text}
+                </li>
+              ))}
+            </ul>
+          </div>
         ),
       };
     }

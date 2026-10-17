@@ -88,7 +88,9 @@ function EvidencePlayer({ clip }: { clip: EvidenceClip }) {
         )}
       </div>
       <figcaption className="flex items-start justify-between gap-3 text-xs text-muted-foreground">
-        <span className="text-pretty">{clip.text}</span>
+        <span className="tabular-nums">
+          {clip.order_id ?? `Pack ${clip.pack_id.slice(0, 8)}`}, {clipRange(clip) ?? "whole clip"}
+        </span>
         {clip.order_id && (
           <a
             href={`/proof/${encodeURIComponent(clip.order_id)}?t=${start}`}
@@ -131,7 +133,9 @@ export function EvidenceRow({ clips }: { clips: EvidenceClip[] }) {
                 style={{ backgroundColor: labelColor(clip.label) }}
               />
               {clip.label}
-              {clipRange(clip) && <span className="text-muted-foreground">{clipRange(clip)}</span>}
+              <span className="text-muted-foreground">
+                {clipRange(clip) ?? clip.pack_id.slice(0, 8)}
+              </span>
             </HoverCardTrigger>
             <HoverCardContent side="top" className="flex w-72 flex-col gap-1.5">
               <p className="text-xs font-medium text-muted-foreground tabular-nums">
