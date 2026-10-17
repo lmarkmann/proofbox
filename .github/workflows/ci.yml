@@ -42,6 +42,8 @@ jobs:
         run: pnpm run version:check
       - name: web check
         run: pnpm exec vp check
+      - name: web test
+        run: pnpm exec vp run web#test
       - name: web build
         run: pnpm exec vp run web#build
       - name: worker config

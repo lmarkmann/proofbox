@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { VisionOverlay } from "@/components/vision-overlay";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { OrderDetail, PackSummary } from "@/lib/api";
@@ -21,7 +22,6 @@ import {
   type Sighting,
   sightingsOf,
 } from "@/proof/pack-model";
-import { ReplayOverlay } from "@/proof/replay-overlay";
 import type { SummaryState, TrackState } from "@/proof/use-proof";
 
 // how long a marker or chip stays highlighted after playback passes it
@@ -288,7 +288,11 @@ export function PackEvidence({
             onError={() => setVideoFailed(true)}
           />
           {!videoFailed && (
-            <ReplayOverlay detections={detectionsAt(frames, ms)} frameSize={frameSize} />
+            <VisionOverlay
+              detections={detectionsAt(frames, ms)}
+              frameSize={frameSize}
+              fit="contain"
+            />
           )}
           {videoFailed && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center">

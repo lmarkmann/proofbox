@@ -7,6 +7,7 @@
     "dev": "vp dev",
     "build": "tsc -b && vp build",
     "preview": "vp preview",
+    "test": "vp test run",
     "deploy": "vp run build && wrangler deploy"
   },
   "dependencies": {

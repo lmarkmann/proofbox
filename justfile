@@ -19,6 +19,7 @@ dev:
 check:
     pnpm run --silent version:check
     vp check
+    vp run web#test
     cd apps/api && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
     cd apps/printer && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
     cd apps/vision && uv run ruff format --check && uv run ruff check && uv run pyrefly check && uv run pytest -q
