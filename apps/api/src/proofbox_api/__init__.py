@@ -12,6 +12,7 @@ import httpx
 import uvicorn
 import weave
 from fastapi import (
+    BackgroundTasks,
     Depends,
     FastAPI,
     Form,
@@ -26,7 +27,7 @@ from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from proofbox_api import canary, settings
-from proofbox_api.ask import Answer, Toolbox, ask
+from proofbox_api.ask import Answer, Evidence, Toolbox, ask, summarize_pack
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import (
     Order,
@@ -38,6 +39,7 @@ from proofbox_api.packing import (
     find_clip,
     judge,
     remux,
+    track_spans,
 )
 from proofbox_api.store import Store
 from proofbox_api.vss import VSS
@@ -141,6 +143,12 @@ class Sealed(BaseModel):
     upload_error: str | None
 
 
+class Summary(BaseModel):
+    pack_id: str
+    text: str
+    evidence: list[Evidence]
+
+
 class Question(BaseModel):
     question: str
     order_id: str | None = None
@@ -201,6 +209,7 @@ async def seal_pack(
     pack_id: PackId,
     video: UploadFile,
     track: Annotated[str, Form()],
+    background: BackgroundTasks,
 ) -> Sealed:
     opened = svc.packs_dir / f"{pack_id}.json"
     if not opened.exists():
@@ -251,6 +260,7 @@ async def seal_pack(
         verdict=judge(order, counts),
     )
     await asyncio.to_thread(svc.store.insert_pack, sealed, points)
+    background.add_task(summarize_pack, svc.tools, pack_id)
     return Sealed(
         pack_id=pack_id,
         order_id=order.order_id,
@@ -274,6 +284,29 @@ def pack_track(svc: Svc, pack_id: PackId) -> list[TrackPoint]:
     if svc.store.pack(pack_id) is None:
         raise HTTPException(404, f"no sealed pack {pack_id}")
     return svc.store.track(pack_id)
+
+
+@app.get("/packs/{pack_id}/summary")
+def pack_summary(svc: Svc, pack_id: PackId) -> Summary:
+    text = svc.store.summary(pack_id)
+    pack = svc.store.pack(pack_id)
+    if text is None or pack is None:
+        raise HTTPException(404, f"no summary yet for pack {pack_id}")
+    spans = track_spans(svc.store.track(pack_id))
+    return Summary(
+        pack_id=pack_id,
+        text=text,
+        evidence=[
+            Evidence(
+                pack_id=pack_id,
+                order_id=pack.order_id,
+                start_s=first_ms / 1000,
+                end_s=last_ms / 1000,
+                text=f"{label} #{track_id}",
+            )
+            for (label, track_id), (first_ms, last_ms) in spans.items()
+        ],
+    )
 
 
 @app.post("/ask")

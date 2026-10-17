@@ -1,4 +1,11 @@
-from proofbox_api.packing import Item, Order, TrackPoint, count_tracks, judge
+from proofbox_api.packing import (
+    Item,
+    Order,
+    TrackPoint,
+    count_tracks,
+    judge,
+    track_spans,
+)
 
 ORDER = Order(
     order_id="PB-1002",
@@ -39,3 +46,18 @@ def test_unexpected_when_a_label_outside_the_order_was_seen():
 
 def test_complete_when_every_item_is_met():
     assert judge(ORDER, {"water bottle": 3, "notebook": 1}) == "complete"
+
+
+def test_track_spans_run_from_first_to_last_sighting_of_each_track():
+    track = [
+        TrackPoint(t_ms=900, track=1, label="pen", conf=0.8, box=(0, 0, 1, 1)),
+        TrackPoint(t_ms=200, track=1, label="pen", conf=0.8, box=(0, 0, 1, 1)),
+        TrackPoint(t_ms=500, track=2, label="pen", conf=0.8, box=(0, 0, 1, 1)),
+        TrackPoint(
+            t_ms=700, track=None, label="pen", conf=0.8, box=(0, 0, 1, 1)
+        ),
+    ]
+    assert track_spans(track) == {
+        ("pen", 1): (200, 900),
+        ("pen", 2): (500, 500),
+    }

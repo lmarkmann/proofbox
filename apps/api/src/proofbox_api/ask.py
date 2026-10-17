@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -174,6 +175,19 @@ async def search_archive(
         "answer": found["answer"],
         "matches": [item.model_dump() for item in evidence],
     }, evidence
+
+
+async def summarize_pack(tools: Toolbox, pack_id: str) -> None:
+    try:
+        content, _ = await watch_pack(
+            tools, pack_id, "Describe exactly what was packed into this box."
+        )
+    except LookupError, httpx.HTTPError:
+        logging.getLogger(__name__).exception("no summary for pack %s", pack_id)
+        return
+    await asyncio.to_thread(
+        tools.store.insert_summary, pack_id, content["cosmos"]
+    )
 
 
 TOOL_FUNCTIONS = {

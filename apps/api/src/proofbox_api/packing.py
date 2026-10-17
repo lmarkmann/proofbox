@@ -51,6 +51,18 @@ def count_tracks(track: list[TrackPoint]) -> dict[str, int]:
     return {label: len(ids) for label, ids in tracks_by_label.items()}
 
 
+def track_spans(
+    track: list[TrackPoint],
+) -> dict[tuple[str, int], tuple[int, int]]:
+    spans: dict[tuple[str, int], tuple[int, int]] = {}
+    for point in sorted(track, key=lambda point: point.t_ms):
+        if point.track is not None:
+            key = (point.label, point.track)
+            first_ms = spans[key][0] if key in spans else point.t_ms
+            spans[key] = (first_ms, point.t_ms)
+    return spans
+
+
 def judge(order: Order, counts: dict[str, int]) -> Verdict:
     expected = {item.name for item in order.items}
     if any(counts.get(item.name, 0) < item.qty for item in order.items):
