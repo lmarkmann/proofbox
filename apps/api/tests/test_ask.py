@@ -7,7 +7,13 @@ from typing import Any
 import httpx2
 from openai import AsyncOpenAI
 
-from proofbox_api.ask import MAX_TOOL_ROUNDS, Answer, Toolbox, ask
+from proofbox_api.ask import (
+    MAX_TOOL_ROUNDS,
+    Answer,
+    Toolbox,
+    ask,
+    summarize_pack,
+)
 from proofbox_api.cosmos import Cosmos
 from proofbox_api.packing import Item, Order, Pack
 from proofbox_api.store import Store
@@ -31,7 +37,10 @@ PACK = Pack(
 
 class FakeStore(Store):
     def __init__(self):
-        pass
+        self.summaries: dict[str, str] = {}
+
+    def insert_summary(self, pack_id: str, text: str) -> None:
+        self.summaries[pack_id] = text
 
     def order(self, order_id: str) -> Order | None:
         return ORDER if order_id == ORDER.order_id else None
@@ -216,3 +225,17 @@ def test_stops_offering_tools_after_the_round_cap(tmp_path: Path):
     assert answer.answer == "Done."
     assert len(requests) == MAX_TOOL_ROUNDS + 1
     assert "tools" not in requests[-1]
+
+
+def test_summary_stores_what_cosmos_saw_and_skips_unknown_packs(tmp_path: Path):
+    (tmp_path / f"{PACK.pack_id}.mp4").write_bytes(b"mp4")
+    store, cosmos = FakeStore(), FakeCosmos()
+    tools = Toolbox(store, cosmos, FakeVSS(), tmp_path)
+
+    asyncio.run(summarize_pack(tools, PACK.pack_id))
+    asyncio.run(summarize_pack(tools, "ffffffff"))
+
+    assert store.summaries == {
+        PACK.pack_id: "A mug goes in at 2 s; no scissors are seen."
+    }
+    assert "Describe exactly what was packed" in cosmos.prompts[0]

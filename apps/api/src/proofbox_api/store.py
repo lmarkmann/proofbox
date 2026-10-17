@@ -33,6 +33,13 @@ TABLES = {
             ("verdict", pa.utf8()),
         ]
     ),
+    "summaries": pa.schema(
+        [
+            ("pack_id", pa.utf8()),
+            ("text", pa.utf8()),
+            ("created_at", pa.timestamp("us")),
+        ]
+    ),
     "detections": pa.schema(
         [
             ("pack_id", pa.utf8()),
@@ -177,6 +184,23 @@ class Store:
                 schema.table("detections").insert(
                     pa.Table.from_pylist(detection_rows, TABLES["detections"])
                 )
+
+    def insert_summary(self, pack_id: str, text: str) -> None:
+        row = {
+            "pack_id": pack_id,
+            "text": text,
+            "created_at": datetime.now(UTC).replace(tzinfo=None),
+        }
+        with self.table("summaries") as table:
+            table.insert(pa.Table.from_pylist([row], TABLES["summaries"]))
+
+    def summary(self, pack_id: str) -> str | None:
+        rows = self.select("summaries", _.pack_id == pack_id)
+        return (
+            max(rows, key=lambda row: row["created_at"])["text"]
+            if rows
+            else None
+        )
 
     def track(self, pack_id: str) -> list[TrackPoint]:
         rows = sorted(
