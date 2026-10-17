@@ -27,8 +27,8 @@ function Tile({
   reading: Reading;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+    <div className="flex items-start gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10 sm:p-4">
+      <div className="hidden size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground sm:grid">
         <Icon className="size-4" />
       </div>
       <div className="flex min-w-0 flex-col gap-0.5">
@@ -45,7 +45,9 @@ function Tile({
               <span aria-hidden className={cn("size-2 rounded-full", DOT[reading.tone])} />
               {reading.value}
             </p>
-            <p className="truncate text-xs text-muted-foreground">{reading.detail}</p>
+            <p className="text-xs text-pretty text-muted-foreground sm:truncate">
+              {reading.detail}
+            </p>
           </>
         )}
       </div>

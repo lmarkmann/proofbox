@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
 import { ActivityLog } from "@/components/activity-log";
+import { type Account, UserMenu } from "@/components/app-header";
 import { CameraPanel } from "@/components/camera-panel";
 import { type Preview, PreviewFrame, type PrintJob, PrintFeedback } from "@/components/label-panel";
-import { OfflineBanner } from "@/components/packing-station";
+import { OfflineBanner, PackingStation } from "@/components/packing-station";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
 import { AuthSplash } from "@/App";
@@ -23,6 +24,21 @@ const CAMERA_FAILURES: CameraFailure[] = [
   "insecure",
   "disconnected",
   "unknown",
+];
+const ACCOUNTS: [string, Account][] = [
+  [
+    "named, no picture",
+    { email: "packer@example.com", firstName: "Sam", lastName: "Rivera", profilePictureUrl: null },
+  ],
+  [
+    "email only, long address",
+    {
+      email: "night-shift.station-04@fulfilment.example.com",
+      firstName: null,
+      lastName: null,
+      profilePictureUrl: null,
+    },
+  ],
 ];
 const PRINTER_FAILURES: PrinterFailure[] = [
   { kind: "agent-down" },
@@ -97,6 +113,26 @@ export default function StateGallery() {
         Development state gallery. Every panel below is a fixture, not live data.
       </div>
       <main className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-8 sm:px-6">
+        <Section title="Station, live probes">
+          <Cell name="composed station; the header has no account menu here because the gallery skips sign-in">
+            <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10 [&>div]:min-h-0">
+              <PackingStation />
+            </div>
+          </Cell>
+        </Section>
+
+        <Section title="Account menu">
+          <div className="grid gap-6 md:grid-cols-2">
+            {ACCOUNTS.map(([name, account]) => (
+              <Cell key={name} name={name}>
+                <div className="flex justify-end rounded-xl bg-background p-2 ring-1 ring-foreground/10">
+                  <UserMenu user={account} onSignOut={noop} />
+                </div>
+              </Cell>
+            ))}
+          </div>
+        </Section>
+
         <Section title="Status strip">
           <Cell name="all checking">
             <StatusStrip

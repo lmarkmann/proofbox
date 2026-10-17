@@ -1,8 +1,8 @@
 import { useAuth } from "@workos-inc/authkit-react";
 import { lazy, Suspense, useEffect } from "react";
-import { SignInScreen } from "@/components/sign-in-screen";
+
 import { PackingStation } from "@/components/packing-station";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { SignInScreen } from "@/components/sign-in-screen";
 
 // dev only: /?states renders every UI state; production builds drop this import entirely
 const StateGallery = import.meta.env.DEV ? lazy(() => import("@/debug/state-gallery")) : null;

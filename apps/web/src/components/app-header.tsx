@@ -1,4 +1,4 @@
-import { useAuth } from "@workos-inc/authkit-react";
+import { type User, useAuth } from "@workos-inc/authkit-react";
 import { ChevronDownIcon, LogOutIcon, UserRoundIcon } from "lucide-react";
 
 import { useTheme } from "@/components/theme-provider";
@@ -18,10 +18,10 @@ import {
 
 type Theme = "light" | "dark" | "system";
 
-function UserMenu() {
-  const { user, signOut } = useAuth();
+export type Account = Pick<User, "email" | "firstName" | "lastName" | "profilePictureUrl">;
+
+export function UserMenu({ user, onSignOut }: { user: Account; onSignOut: () => void }) {
   const { theme, setTheme } = useTheme();
-  if (!user) return null;
   const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
 
   return (
@@ -69,7 +69,7 @@ function UserMenu() {
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem onClick={onSignOut}>
           <LogOutIcon />
           Sign out
         </DropdownMenuItem>
@@ -79,6 +79,7 @@ function UserMenu() {
 }
 
 export function AppHeader() {
+  const { user, signOut } = useAuth();
   return (
     <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
@@ -88,7 +89,7 @@ export function AppHeader() {
         <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
         <span className="hidden text-sm text-muted-foreground sm:block">Packing station</span>
         <div className="ml-auto">
-          <UserMenu />
+          {user && <UserMenu user={user} onSignOut={() => signOut()} />}
         </div>
       </div>
     </header>

@@ -38,7 +38,7 @@ export function ActivityLog({ labels, onStart }: { labels: PrintedLabel[]; onSta
                 <span className="text-xs text-muted-foreground">Label printed</span>
                 <time
                   dateTime={at.toISOString()}
-                  className="w-12 text-right text-xs text-muted-foreground tabular-nums"
+                  className="shrink-0 text-right text-xs whitespace-nowrap text-muted-foreground tabular-nums"
                 >
                   {formatTime(at)}
                 </time>
