@@ -9,9 +9,12 @@ import { OfflineBanner, PackingStation } from "@/components/packing-station";
 import { PanelBoundary } from "@/components/panel-boundary";
 import { StatusStrip } from "@/components/status-strip";
 import { AuthSplash } from "@/App";
+import { demoOrder, demoPoints, demoSummary, demoVideoUrl } from "@/debug/pack-demo";
 import type { CameraFailure, CameraState } from "@/hooks/use-camera";
 import type { PrinterStatus } from "@/hooks/use-probe";
 import type { PrinterFailure } from "@/lib/printer";
+import { ProofView } from "@/proof/proof-page";
+import type { ProofState, SummaryState } from "@/proof/use-proof";
 
 // Pinned fixtures: fixed times, and a sample image standing in for a rendered label.
 const AT = new Date("2026-10-17T14:32:00");
@@ -60,6 +63,47 @@ const PRINTER_STATUSES: PrinterStatus[] = [
   { tag: "agent-down" },
   { tag: "no-printer", version: "0.2.0" },
   { tag: "ready", version: "0.2.0" },
+];
+
+const DEMO_PACK = demoOrder.packs[0];
+const packed = (
+  pack: Partial<typeof DEMO_PACK>,
+  track: Extract<ProofState, { tag: "packed" }>["track"] = { tag: "ready", points: demoPoints },
+): ProofState => ({
+  tag: "packed",
+  order: demoOrder,
+  pack: { ...DEMO_PACK, ...pack },
+  video: demoVideoUrl,
+  track,
+});
+const SUMMARY_READY: SummaryState = {
+  tag: "ready",
+  answer: { answer: demoSummary, evidence: [] },
+};
+const PROOF_STATES: [string, ProofState, SummaryState][] = [
+  ["loading", { tag: "loading" }, { tag: "loading" }],
+  ["not found", { tag: "not-found" }, { tag: "loading" }],
+  ["API unreachable", { tag: "unreachable" }, { tag: "loading" }],
+  [
+    "order exists, not packed yet",
+    { tag: "not-packed", order: { ...demoOrder, packs: [] } },
+    { tag: "loading" },
+  ],
+  [
+    "short: card never seen",
+    packed(
+      { verdict: "short", counts: { mug: 1, "coffee beans": 1 } },
+      { tag: "ready", points: demoPoints.filter((point) => point.label !== "card") },
+    ),
+    SUMMARY_READY,
+  ],
+  [
+    "unexpected: tape not on the order",
+    packed({ verdict: "unexpected", counts: { ...DEMO_PACK.counts, tape: 1 } }),
+    SUMMARY_READY,
+  ],
+  ["detections still loading, summary loading", packed({}, { tag: "loading" }), { tag: "loading" }],
+  ["detections failed, summary failed", packed({}, { tag: "failed" }), { tag: "failed" }],
 ];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -250,6 +294,18 @@ export default function StateGallery() {
                 onStart={noop}
               />
             </Cell>
+          </div>
+        </Section>
+
+        <Section title="Proof page">
+          <div className="grid gap-6">
+            {PROOF_STATES.map(([name, state, summary]) => (
+              <Cell key={name} name={name}>
+                <div className="h-[52rem] overflow-hidden rounded-xl ring-1 ring-foreground/10 [&>div]:min-h-full">
+                  <ProofView orderId="PB-DEMO" state={state} summary={summary} onRetry={noop} />
+                </div>
+              </Cell>
+            ))}
           </div>
         </Section>
 
