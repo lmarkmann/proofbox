@@ -2,14 +2,18 @@
 
 from PIL import Image
 
-# The sheet is 101.6 x 152.4 mm; the sticker on it is about 150 mm long and
-# the rest of the 152.4 mm pitch is the gap. The canvas covers the sticker
-# only, and REFERENCE shifts it onto the sticker.
+# The sheet is 101.6 x 152.4 mm and the sticker on it about 150 mm long.
+# SIZE must not exceed the sticker: when the gap passes the sensor before
+# SIZE is reached, the printer feeds a whole blank label to the next gap.
+# Shorter is safe because the printer re-syncs on every gap. The canvas
+# covers the sticker only and ends inside SIZE; REFERENCE shifts it onto
+# the sticker.
+DOTS_PER_MM = 8
 LABEL_WIDTH_MM = 101.6
-LABEL_LENGTH_MM = 150.0
+LABEL_LENGTH_MM = 148.0
 GAP_MM = 2.4
-CANVAS = (776, 1168)
 REFERENCE = (40, 28)
+CANVAS = (776, round(LABEL_LENGTH_MM * DOTS_PER_MM) - REFERENCE[1])
 DENSITY = 8
 SPEED = 4
 
