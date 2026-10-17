@@ -1,0 +1,26 @@
+---
+description: VAST Builders Challenge ground rules, adapted for ProofBox. Applies to every session in this repo.
+alwaysApply: true
+---
+
+# VAST Builders Challenge
+
+ProofBox is our entry to the VAST Builders Challenge (video agents). It builds on the team's video search stack (VSS), which the organizers already run: DataEngine ingest, Cosmos3-Reason, YOLO11 and Cosmos Embed1 on CoreWeave GPUs, segments and vectors in VastDB. We build on top of it and never redeploy it.
+
+## Where things are
+
+- `.claude/skills/`: the organizers' skills for the stack (`retrieval-*`, `ingest-*`, `vast-database-vastdb-*`, `gpu-model-*`, `ask-cosmos`); `docs/vast/SKILLS.md` indexes them and lists the typical flows.
+- `docs/vast/RETRIEVAL.md`: the backend auth pattern and the routes that do not exist. Read it before calling an endpoint no skill names.
+- `docs/vast/ARCHITECTURE_REFERENCE.md`: models, pipeline functions, the indexed video corpus and its `camera_id` values.
+- `docs/vast/BUILD_DAY.md`: the build day guide. `docs/vast/config.example`: every stack variable and what it is for.
+
+## Rules
+
+- Use a matching skill in `.claude/skills/` before writing raw REST calls to the VSS backend, VastDB or the GPU endpoints.
+- Credentials and endpoints are environment variables named in `docs/vast/config.example`, exported on the team's workshop VM from `/config/<team>.config`. On a laptop they are not set; say which ones are missing instead of guessing values. Never hardcode them, never commit them, never edit `/etc/hosts`.
+- List which variables are set with `env | cut -d= -f1 | sort`. Never run bare `env` or `printenv`, which print secret values.
+- If search returns nothing, check the filter values (`retrieval/list-metadata`) and whether ingestion is still running before assuming a bug.
+- The ingestion prompt decides what gets indexed. If the captions never mention what ProofBox needs (items going into a box, a label, a sealed lid), re-ingest with a prompt that asks for it. Re-ingest a few clips, not hours of video, and leave bulk re-ingests to one or two people on the team.
+- Never ingest video from the internet; only the provided footage and our own recordings.
+- ProofBox is a web app plus a local printer agent. Do not turn it into a native desktop or mobile app; it could not be demoed.
+- When stuck, use `ask-cosmos`. It prepares a note and never posts it; the team posts it on Cosmos themselves.
