@@ -20,3 +20,4 @@ peerDependencyRules:
     vite: "*"
 allowBuilds:
   esbuild: true
+  workerd: true
