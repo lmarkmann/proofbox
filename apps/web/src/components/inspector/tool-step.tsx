@@ -19,7 +19,7 @@ export type ToolPart = ToolUIPart<InspectorTools>;
 
 type Step = { icon: ReactNode; running: string; done: string; detail?: string; body?: ReactNode };
 
-const shortId = (packId: string | undefined) => (packId ? packId.slice(0, 8) : "");
+const shortId = (packId: string | null | undefined) => (packId ? packId.slice(0, 8) : "");
 
 function describe(part: ToolPart): Step {
   switch (part.type) {

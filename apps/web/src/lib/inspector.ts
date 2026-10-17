@@ -4,13 +4,16 @@ import type { OrderItem, PackSummary } from "@/lib/api";
 
 /** A moment in a pack's clip the agent cites; `label` names what is in it. */
 export type EvidenceClip = {
-  pack_id: string;
+  pack_id: string | null;
   order_id: string | null;
   start_s: number | null;
   end_s: number | null;
   label: string;
   text: string;
 };
+
+/** Archive hits VSS cannot tie to a pack have no clip to play. */
+export type PlayableClip = EvidenceClip & { pack_id: string };
 
 export type ArchiveHit = Omit<EvidenceClip, "label">;
 

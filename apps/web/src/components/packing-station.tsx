@@ -218,14 +218,16 @@ export function PackingStation() {
             </div>
           </div>
         </main>
-        <Inspector
-          open={inspecting}
-          onOpenChange={setInspecting}
-          orderId={boundOrderId}
-          phase={benchPhase(session.state)}
-          check={check}
-          onRepack={session.repack}
-        />
+        <PanelBoundary title="Inspector">
+          <Inspector
+            open={inspecting}
+            onOpenChange={setInspecting}
+            orderId={boundOrderId}
+            phase={benchPhase(session.state)}
+            check={check}
+            onRepack={session.repack}
+          />
+        </PanelBoundary>
       </div>
     </div>
   );

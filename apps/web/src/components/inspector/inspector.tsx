@@ -41,8 +41,8 @@ import type { CheckState } from "@/hooks/use-seal-check";
 import { useVoice, type VoiceState } from "@/hooks/use-voice";
 import {
   type BenchPhase,
-  type EvidenceClip,
   type InspectorMessage,
+  type PlayableClip,
   suggestionsFor,
 } from "@/lib/inspector";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,7 @@ function Thinking({ children = "Thinking with W&B Inference" }: { children?: Rea
 }
 
 function AgentMessage({ message, streaming }: { message: InspectorMessage; streaming: boolean }) {
-  const clips: EvidenceClip[] = [];
+  const clips: PlayableClip[] = [];
   const body: ReactNode[] = [];
   let waiting = streaming;
   message.parts.forEach((part, index) => {
@@ -88,7 +88,8 @@ function AgentMessage({ message, streaming }: { message: InspectorMessage; strea
           {part.text}
         </Streamdown>,
       );
-    } else if (part.type === "data-evidence") clips.push(part.data);
+    } else if (part.type === "data-evidence" && part.data.pack_id !== null)
+      clips.push({ ...part.data, pack_id: part.data.pack_id });
   });
   const traceUrl = message.metadata?.traceUrl;
   return (

@@ -5,7 +5,7 @@ import { labelColor, VisionOverlay } from "@/components/vision-overlay";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { getTrack, packVideoUrl } from "@/lib/api";
-import { clipRange, type EvidenceClip } from "@/lib/inspector";
+import { clipRange, type PlayableClip } from "@/lib/inspector";
 import { cn } from "@/lib/utils";
 import { detectionsAt, type Frame, framesOf } from "@/proof/pack-model";
 
@@ -29,7 +29,7 @@ function framesFor(packId: string) {
 const TAIL_S = 0.75;
 
 /** Plays one cited moment of a pack's clip in place, looping it, with the detector's boxes on top. */
-function EvidencePlayer({ clip }: { clip: EvidenceClip }) {
+function EvidencePlayer({ clip }: { clip: PlayableClip }) {
   const player = useRef<HTMLVideoElement>(null);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [ms, setMs] = useState(0);
@@ -108,7 +108,7 @@ function EvidencePlayer({ clip }: { clip: EvidenceClip }) {
 }
 
 /** The answer's citations as chips; choosing one plays that moment right under the answer. */
-export function EvidenceRow({ clips }: { clips: EvidenceClip[] }) {
+export function EvidenceRow({ clips }: { clips: PlayableClip[] }) {
   const [playing, setPlaying] = useState<number | null>(null);
   const shown = playing === null ? null : clips[playing];
   return (
