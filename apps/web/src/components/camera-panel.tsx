@@ -7,7 +7,7 @@ import {
   VideoOffIcon,
   type LucideIcon,
 } from "lucide-react";
-import { type ReactNode, type RefObject, useEffect, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { CameraFailure, CameraState } from "@/hooks/use-camera";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { CameraDevice, CameraFailure, CameraState } from "@/hooks/use-camera";
 import { assertNever } from "@/lib/assert-never";
 
 const FAILURE: Record<CameraFailure, { title: string; fix: string }> = {
@@ -84,7 +91,15 @@ function StageMessage({
   );
 }
 
-function Stage({ camera, onStart }: { camera: CameraState; onStart: () => void }) {
+function Stage({
+  camera,
+  resolution,
+  onStart,
+}: {
+  camera: CameraState;
+  resolution: string | null;
+  onStart: () => void;
+}) {
   switch (camera.tag) {
     case "off":
       return (
@@ -98,27 +113,18 @@ function Stage({ camera, onStart }: { camera: CameraState; onStart: () => void }
           Allow the camera in the browser prompt to continue.
         </StageMessage>
       );
-    case "file":
-      return (
-        <>
-          <Corners />
-          <div className="absolute bottom-5 left-5 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur">
-            <FileVideoIcon className="size-3.5" />
-            {camera.name}
-          </div>
-        </>
-      );
     case "live":
+    case "file":
       return (
         <>
           <Corners />
           <div className="absolute top-5 left-5 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur">
             <span className="size-1.5 animate-pulse rounded-full bg-red-500 motion-reduce:animate-none" />
-            Live
+            {camera.tag === "live" ? "Live" : "Replay"}
           </div>
-          {camera.resolution && (
+          {resolution && (
             <div className="absolute top-5 right-5 rounded-md bg-black/60 px-2 py-1 text-xs text-white/80 tabular-nums backdrop-blur">
-              {camera.resolution}
+              {resolution}
             </div>
           )}
         </>
@@ -127,7 +133,7 @@ function Stage({ camera, onStart }: { camera: CameraState; onStart: () => void }
       return (
         <StageMessage icon={VideoOffIcon} title={FAILURE[camera.failure].title}>
           <p>{FAILURE[camera.failure].fix}</p>
-          <Button size="sm" variant="secondary" className="mt-3" onClick={onStart}>
+          <Button size="sm" variant="secondary" className="mt-3" onClick={() => onStart()}>
             <RotateCcwIcon data-icon="inline-start" />
             Try again
           </Button>
@@ -138,25 +144,81 @@ function Stage({ camera, onStart }: { camera: CameraState; onStart: () => void }
   }
 }
 
+function CameraPicker({
+  devices,
+  deviceId,
+  locked,
+  onPick,
+}: {
+  devices: CameraDevice[];
+  deviceId: string;
+  locked: boolean;
+  onPick: (deviceId: string) => void;
+}) {
+  return (
+    <Select
+      disabled={locked}
+      items={devices.map((device) => ({ value: device.id, label: device.label }))}
+      value={deviceId}
+      onValueChange={(id) => id && id !== deviceId && onPick(id)}
+    >
+      <SelectTrigger
+        size="sm"
+        aria-label="Camera"
+        title={locked ? "Seal or discard the box to switch cameras" : undefined}
+        className="max-w-48"
+      >
+        <SelectValue className="truncate" />
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false} align="end" className="w-auto max-w-80">
+        {devices.map((device) => (
+          <SelectItem key={device.id} value={device.id}>
+            {device.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+// The clip's frame size, read off the element, so a replay shows the same chrome as the camera.
+function useClipResolution(video: RefObject<HTMLVideoElement | null>, url: string | null) {
+  const [measured, setMeasured] = useState<{ url: string; resolution: string } | null>(null);
+  useEffect(() => {
+    const element = video.current;
+    if (!element || !url) return;
+    const read = () => {
+      if (element.videoWidth)
+        setMeasured({ url, resolution: `${element.videoWidth}x${element.videoHeight}` });
+    };
+    element.addEventListener("loadedmetadata", read);
+    return () => element.removeEventListener("loadedmetadata", read);
+  }, [video, url]);
+  return measured && measured.url === url ? measured.resolution : null;
+}
+
 export function CameraPanel({
   camera,
   video,
   onStart,
   onStop,
   onPlayFile,
+  switchLocked = false,
   children,
 }: {
   camera: CameraState;
   video: RefObject<HTMLVideoElement | null>;
-  onStart: () => void;
+  onStart: (deviceId?: string) => void;
   onStop: () => void;
   onPlayFile: (file: File) => void;
+  switchLocked?: boolean;
   children?: ReactNode;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const stream = camera.tag === "live" ? camera.stream : null;
   const fileUrl = camera.tag === "file" ? camera.url : null;
   const showing = Boolean(stream ?? fileUrl);
+  const clipResolution = useClipResolution(video, fileUrl);
 
   useEffect(() => {
     const element = video.current;
@@ -173,7 +235,15 @@ export function CameraPanel({
         <CardDescription>
           Every box is filmed while it is packed; the label links to it.
         </CardDescription>
-        <CardAction className="flex gap-2">
+        <CardAction className="flex max-w-56 flex-wrap justify-end gap-2 sm:max-w-none">
+          {camera.tag === "live" && camera.devices.length > 0 && (
+            <CameraPicker
+              devices={camera.devices}
+              deviceId={camera.deviceId}
+              locked={switchLocked}
+              onPick={onStart}
+            />
+          )}
           <input
             ref={fileInput}
             type="file"
@@ -195,7 +265,7 @@ export function CameraPanel({
               Stop
             </Button>
           ) : (
-            <Button size="sm" onClick={onStart} disabled={camera.tag === "requesting"}>
+            <Button size="sm" onClick={() => onStart()} disabled={camera.tag === "requesting"}>
               <CameraIcon data-icon="inline-start" />
               Start camera
             </Button>
@@ -203,17 +273,26 @@ export function CameraPanel({
         </CardAction>
       </CardHeader>
       <CardContent>
-        <div className="relative aspect-video overflow-hidden rounded-lg bg-neutral-950">
+        <div
+          data-source={
+            camera.tag === "file" ? "file" : camera.tag === "live" ? "camera" : undefined
+          }
+          className="relative aspect-video overflow-hidden rounded-lg bg-neutral-950"
+        >
           <video
             ref={video}
             autoPlay
             playsInline
             muted
-            loop
+            loop={camera.tag === "file" && camera.loop}
             className={showing ? "size-full object-cover" : "hidden"}
           />
           {showing && children}
-          <Stage camera={camera} onStart={onStart} />
+          <Stage
+            camera={camera}
+            resolution={camera.tag === "live" ? camera.resolution : clipResolution}
+            onStart={onStart}
+          />
         </div>
       </CardContent>
     </Card>

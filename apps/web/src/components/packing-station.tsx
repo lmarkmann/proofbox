@@ -76,6 +76,9 @@ export function PackingStation() {
     session.state.tag === "sealed" ? session.state.result.pack_id : null,
   );
   const packing = session.state.tag === "packing" ? session.state : null;
+  const switchLocked = packing !== null || session.state.tag === "sealing";
+  const { lockSwitch } = camera;
+  useEffect(() => lockSwitch(switchLocked), [lockSwitch, switchLocked]);
   const vision = useVision(video, packing?.vocabulary ?? null, session.onDetections);
   const boundOrderId = "order" in session.state ? session.state.order.order_id : null;
   const seenOrderId = qr.sighting?.orderId ?? null;
@@ -120,6 +123,7 @@ export function PackingStation() {
                 onStart={camera.start}
                 onStop={camera.stop}
                 onPlayFile={camera.playFile}
+                switchLocked={switchLocked}
               >
                 <VisionOverlay
                   detections={vision.tag === "live" && packing ? vision.detections : []}
