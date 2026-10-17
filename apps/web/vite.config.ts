@@ -15,7 +15,8 @@ export default defineConfig({
     allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8000",
+        // a second worktree tunnels the VM API to another port, since the first holds :8000
+        target: process.env.PROOFBOX_API ?? "http://127.0.0.1:8000",
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
       "/printer": {
