@@ -17,6 +17,9 @@ vite.config.ts.timestamp-*
 !.vscode/extensions.json
 
 __pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
 
 # .claude/ is ignored globally; track it here, minus worktrees and personal settings
 !.claude/

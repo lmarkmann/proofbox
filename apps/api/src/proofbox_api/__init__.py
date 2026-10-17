@@ -41,6 +41,7 @@ from proofbox_api.ask import (
     summarize_pack,
 )
 from proofbox_api.cosmos import Cosmos
+from proofbox_api.middleware import install
 from proofbox_api.packing import (
     Check,
     Order,
@@ -72,7 +73,10 @@ class Services:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # ptrace is locked on the VM, so `kill -USR1 <pid>` is the only way to see a hung loop's stacks
-    faulthandler.register(signal.SIGUSR1, all_threads=True)
+    register = getattr(faulthandler, "register", None)
+    stack_signal = getattr(signal, "SIGUSR1", None)
+    if register is not None and stack_signal is not None:
+        register(stack_signal, all_threads=True)
     config = settings.load()
     packs_dir = config.data_dir / "packs"
     packs_dir.mkdir(parents=True, exist_ok=True)
@@ -121,6 +125,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="ProofBox", version=version("proofbox-api"), lifespan=lifespan
 )
+install(app)
 
 
 def services(request: Request) -> Services:
@@ -193,6 +198,7 @@ class Transcript(BaseModel):
 
 
 @app.get("/health")
+@app.get("/api/health", include_in_schema=False)
 def health() -> dict[str, str]:
     return {"status": "ok", "version": app.version}
 
