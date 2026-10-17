@@ -1,7 +1,7 @@
 import { WifiOffIcon } from "lucide-react";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
-import { ActivityLog } from "@/components/activity-log";
+import { ActivityLog, usePackHistory } from "@/components/activity-log";
 import { AppHeader } from "@/components/app-header";
 import { CameraPanel } from "@/components/camera-panel";
 import { LabelPanel, type PrintedLabel } from "@/components/label-panel";
@@ -72,6 +72,9 @@ export function PackingStation() {
     [cameraStream],
   );
   const session = usePackSession(qr.stableOrderId, recordingStream);
+  const history = usePackHistory(
+    session.state.tag === "sealed" ? session.state.result.pack_id : null,
+  );
   const packing = session.state.tag === "packing" ? session.state : null;
   const vision = useVision(video, packing?.vocabulary ?? null, session.onDetections);
   const boundOrderId = "order" in session.state ? session.state.order.order_id : null;
@@ -158,6 +161,7 @@ export function PackingStation() {
             <PanelBoundary title="Activity">
               <ActivityLog
                 labels={labels}
+                history={history}
                 onStart={() => document.getElementById("order-id")?.focus()}
               />
             </PanelBoundary>

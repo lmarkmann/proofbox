@@ -66,6 +66,11 @@ const json = (value: unknown): RequestInit => ({
 
 export const listOrders = () => call<Order[]>("/orders");
 
+export type RecentPack = PackSummary & { order_id: string };
+
+/** Newest first, so the station history survives a reload. */
+export const recentPacks = (limit = 20) => call<RecentPack[]>(`/packs?limit=${limit}`);
+
 export const getOrder = (orderId: string) =>
   call<OrderDetail>(`/orders/${encodeURIComponent(orderId)}`);
 

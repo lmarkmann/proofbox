@@ -282,15 +282,38 @@ export default function StateGallery() {
         <Section title="Activity">
           <div className="grid gap-6 md:grid-cols-2">
             <Cell name="empty, first run">
-              <ActivityLog labels={[]} onStart={noop} />
+              <ActivityLog labels={[]} history={[]} onStart={noop} />
             </Cell>
-            <Cell name="three labels">
+            <Cell name="sealed packs after a reload">
+              <ActivityLog
+                labels={[{ orderId: "PB-1003", at: new Date("2026-10-17T14:52:00") }]}
+                history={[
+                  {
+                    pack_id: "pk_2",
+                    order_id: "PB-1002",
+                    sealed_at: "2026-10-17T14:47:00Z",
+                    verdict: "short",
+                    counts: { "water bottle": 1, notebook: 1 },
+                  },
+                  {
+                    pack_id: "pk_1",
+                    order_id: "PB-1001",
+                    sealed_at: "2026-10-17T14:39:00Z",
+                    verdict: "complete",
+                    counts: { "coffee mug": 1, scissors: 1, "roll of tape": 1 },
+                  },
+                ]}
+                onStart={noop}
+              />
+            </Cell>
+            <Cell name="three labels, API offline">
               <ActivityLog
                 labels={[
                   { orderId: "PB-20483", at: new Date("2026-10-17T14:41:00") },
                   { orderId: "PB-20482", at: new Date("2026-10-17T14:36:00") },
                   { orderId: "PB-20481", at: AT },
                 ]}
+                history="unavailable"
                 onStart={noop}
               />
             </Cell>
